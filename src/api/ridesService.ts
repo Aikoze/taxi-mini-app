@@ -9,7 +9,7 @@ export const ridesService = {
     /**
      * Récupère les courses d'un utilisateur
      */
-    getUserRides: async (userId: string, status?: string): Promise<Ride[]> => {
+    getUserRides: async (userId: number | string, status?: string): Promise<Ride[]> => {
         const endpoint = `/api/users/${userId}/rides${status ? `?status=${status}` : ''}`;
         return apiService.get<Ride[]>(endpoint);
     },
@@ -33,7 +33,7 @@ export const ridesService = {
      */
     showInterest: async (
         rideId: number,
-        driverId: string,
+        driverId: number | string,
         location: { latitude: number; longitude: number }
     ): Promise<ApiResponse<void>> => {
         return apiService.post<ApiResponse<void>>(`/api/rides/${rideId}/interest`, {
@@ -45,7 +45,7 @@ export const ridesService = {
     /**
      * Marque une course comme terminée
      */
-    completeRide: async (rideId: number, driverId: string): Promise<ApiResponse<void>> => {
+    completeRide: async (rideId: number, driverId: number | string): Promise<ApiResponse<void>> => {
         return apiService.post<ApiResponse<void>>(`/api/rides/${rideId}/complete`, {
             driverId
         });
