@@ -13,8 +13,9 @@ const MyRidesPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   
   useEffect(() => {
+    // Charger les courses une seule fois au chargement
     fetchMyRides();
-  }, [fetchMyRides]);
+  }, []); // Utiliser un tableau de dépendances vide pour n'exécuter qu'une seule fois
   
   const handleCompleteRide = async (rideId: number) => {
     try {

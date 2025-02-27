@@ -9,58 +9,7 @@ export function setupTelegramMock() {
     console.log('Setting up Telegram WebApp mock...');
   
     // Create mock Telegram object
-    const mainButton = {
-      isActive: true,
-      isVisible: false,
-      isProgressVisible: false,
-      text: "CONTINUE",
-      color: "#2AABEE" as `#${string}`,
-      textColor: "#ffffff" as `#${string}`,
-      show: function() {
-        console.log('MainButton.show() called');
-        this.isVisible = true;
-      },
-      hide: function() {
-        console.log('MainButton.hide() called');
-        this.isVisible = false;
-      },
-      enable: function() {
-        console.log('MainButton.enable() called');
-        this.isActive = true;
-      },
-      disable: function() {
-        console.log('MainButton.disable() called');
-        this.isActive = false;
-      },
-      showProgress: function(leaveActive) {
-        console.log('MainButton.showProgress() called', { leaveActive });
-        this.isProgressVisible = true;
-      },
-      hideProgress: function() {
-        console.log('MainButton.hideProgress() called');
-        this.isProgressVisible = false;
-      },
-      setText: function(text) {
-        console.log('MainButton.setText() called', { text });
-        this.text = text;
-      },
-      onClick: function(callback) {
-        console.log('MainButton.onClick() registered');
-        document.addEventListener('mockMainButtonClick', callback);
-      },
-      offClick: function(callback) {
-        console.log('MainButton.offClick() called');
-        document.removeEventListener('mockMainButtonClick', callback);
-      },
-      setParams: function(params) {
-        console.log('MainButton.setParams() called', params);
-        if (params.color) this.color = params.color as `#${string}`;
-        if (params.text) this.text = params.text;
-        if (params.text_color) this.textColor = params.text_color as `#${string}`;
-        if (params.is_active !== undefined) this.isActive = params.is_active;
-        if (params.is_visible !== undefined) this.isVisible = params.is_visible;
-      }
-    };
+    const mainButton = createMockMainButton();
 
     const backButton = {
       isVisible: false,
@@ -323,3 +272,95 @@ export function setupTelegramMock() {
     
     console.log('Telegram WebApp mock setup complete');
 }
+
+export const createMockMainButton = () => {
+  let isVisible = false;
+  let text = 'CONTINUE';
+  let isActive = true;
+  let isProgressVisible = false;
+  let color: `#${string}` = '#2481cc';
+  let textColor: `#${string}` = '#ffffff';
+  let callback: (() => void) | null = null;
+
+  console.log('Creating mock MainButton');
+
+  // Stocker le callback dans une variable globale pour pouvoir le déclencher manuellement
+  document.addEventListener('mockMainButtonClick', () => {
+    console.log('Mock MainButton click event received');
+    if (callback && isActive && isVisible) {
+      console.log('Executing MainButton callback from event');
+      callback();
+    } else {
+      console.log('Cannot execute callback: active=', isActive, 'visible=', isVisible, 'callback=', !!callback);
+    }
+  });
+
+  return {
+    text,
+    color,
+    textColor,
+    isVisible,
+    isActive,
+    isProgressVisible,
+
+    // Méthodes pour modifier les propriétés
+    setText: (newText: string) => {
+      console.log('Mock MainButton: setText', newText);
+      text = newText;
+      return this;
+    },
+    show: () => {
+      console.log('Mock MainButton: show');
+      isVisible = true;
+      return this;
+    },
+    hide: () => {
+      console.log('Mock MainButton: hide');
+      isVisible = false;
+      return this;
+    },
+    enable: () => {
+      console.log('Mock MainButton: enable');
+      isActive = true;
+      return this;
+    },
+    disable: () => {
+      console.log('Mock MainButton: disable');
+      isActive = false;
+      return this;
+    },
+    showProgress: (leaveActive = true) => {
+      console.log('Mock MainButton: showProgress', leaveActive);
+      isProgressVisible = true;
+      isActive = leaveActive;
+      return this;
+    },
+    hideProgress: () => {
+      console.log('Mock MainButton: hideProgress');
+      isProgressVisible = false;
+      return this;
+    },
+    setParams: (params: any) => {
+      console.log('Mock MainButton: setParams', params);
+      if (params.text) text = params.text;
+      if (params.color) color = params.color;
+      if (params.text_color) textColor = params.text_color;
+      if (params.is_active !== undefined) isActive = params.is_active;
+      if (params.is_visible !== undefined) isVisible = params.is_visible;
+      return this;
+    },
+    onClick: (cb: () => void) => {
+      console.log('Mock MainButton: onClick - Setting callback');
+      callback = cb;
+      // Stocker le callback dans une variable globale pour pouvoir le déclencher manuellement
+      (window as any).__mockMainButtonCallback = cb;
+      return this;
+    },
+    offClick: () => {
+      console.log('Mock MainButton: offClick - Removing callback');
+      callback = null;
+      (window as any).__mockMainButtonCallback = null;
+      return this;
+    },
+  };
+};

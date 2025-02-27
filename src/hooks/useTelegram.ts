@@ -46,24 +46,27 @@ export const useTelegram = () => {
         inTelegram: telegramDetected,
         user: getTelegramUser(),
         initData: getTelegramInitData(),
-        
+
         // Main button functions
         setMainButtonVisible,
         setMainButtonText,
         setMainButtonLoading,
         onMainButtonClick,
-        
+        MainButton: (() => {
+            return WebApp?.MainButton;
+        })(),
+
         // App functions
         close: closeTelegramWebApp,
         showAlert: showTelegramAlert,
         showConfirm: showTelegramConfirm,
-        
+
         // Theme
         theme: getTelegramTheme(),
-        
+
         // Location
         requestLocation,
-        
+
         // Direct access to WebApp
         WebApp
     };

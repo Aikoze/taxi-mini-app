@@ -23,11 +23,11 @@ export const isInTelegram = (): boolean => {
   const hasTelegramWebApp = Boolean(WebApp);
 
   // Log for debugging
-  console.log('Telegram detection:', { 
-    isInIframe, 
+  console.log('Telegram detection:', {
+    isInIframe,
     hasTelegramWebApp,
     WebApp,
-    isDev: import.meta.env.DEV 
+    isDev: import.meta.env.DEV
   });
 
   return hasTelegramWebApp || isInIframe;
@@ -50,9 +50,37 @@ export const initTelegramApp = (): void => {
 // Get Telegram user data
 export const getTelegramUser = () => {
   try {
-    return WebApp.initDataUnsafe.user;
+    // En mode développement, si l'utilisateur n'est pas disponible, créer un utilisateur fictif
+    const user = WebApp.initDataUnsafe.user;
+
+    if (!user && import.meta.env.DEV) {
+      return {
+        id: Date.now(),
+        first_name: "Dev",
+        last_name: "User",
+        username: `dev_${Date.now()}`,
+        language_code: "fr",
+        is_premium: false
+      };
+    }
+
+    return user;
   } catch (error) {
     console.error('Error getting Telegram user:', error);
+
+    // En mode développement, retourner un utilisateur fictif en cas d'erreur
+    if (import.meta.env.DEV) {
+      console.log('Providing mock user after error in development mode');
+      return {
+        id: Date.now(),
+        first_name: "Error",
+        last_name: "Fallback",
+        username: `error_${Date.now()}`,
+        language_code: "fr",
+        is_premium: false
+      };
+    }
+
     return null;
   }
 };
@@ -70,6 +98,7 @@ export const getTelegramInitData = (): string => {
 // Main Button functions
 export const setMainButtonVisible = (visible = true): void => {
   try {
+    console.log('Setting MainButton visibility:', visible, 'WebApp.MainButton:', WebApp?.MainButton);
     if (visible) {
       WebApp.MainButton.show();
     } else {
@@ -82,6 +111,7 @@ export const setMainButtonVisible = (visible = true): void => {
 
 export const setMainButtonText = (text: string): void => {
   try {
+    console.log('Setting MainButton text:', text, 'WebApp.MainButton:', WebApp?.MainButton);
     WebApp.MainButton.setText(text);
   } catch (error) {
     console.error('Error setting main button text:', error);
@@ -90,6 +120,7 @@ export const setMainButtonText = (text: string): void => {
 
 export const setMainButtonLoading = (loading = true): void => {
   try {
+    console.log('Setting MainButton loading:', loading, 'WebApp.MainButton:', WebApp?.MainButton);
     if (loading) {
       WebApp.MainButton.showProgress();
     } else {
@@ -102,6 +133,7 @@ export const setMainButtonLoading = (loading = true): void => {
 
 export const onMainButtonClick = (callback: () => void): void => {
   try {
+    console.log('Setting MainButton click handler', 'WebApp.MainButton:', WebApp?.MainButton);
     WebApp.MainButton.onClick(callback);
   } catch (error) {
     console.error('Error setting main button click handler:', error);
@@ -157,7 +189,7 @@ export interface TelegramTheme {
 export const getTelegramTheme = (): TelegramTheme => {
   try {
     const { themeParams, colorScheme } = WebApp;
-    
+
     return {
       colorScheme: colorScheme || 'light',
       backgroundColor: themeParams?.bg_color || '#ffffff',

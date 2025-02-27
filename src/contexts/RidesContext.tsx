@@ -141,7 +141,8 @@ export const RidesProvider: React.FC<RidesProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    if (user) {
+    // Ajouter une vérification pour éviter les appels en boucle
+    if (user && myRides.length === 0 && availableRides.length === 0 && savedLocations.length === 0) {
       fetchMyRides();
       fetchAvailableRides();
       fetchSavedLocations();

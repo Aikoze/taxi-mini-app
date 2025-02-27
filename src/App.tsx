@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RidesProvider } from './contexts/RidesContext';
 import LoadingScreen from './components/common/LoadingScreen';
@@ -92,7 +92,7 @@ const App: React.FC = () => {
       {!inTelegram && (
         <div className="fixed bottom-0 left-0 right-0 bg-yellow-100 p-4 text-center text-yellow-800">
           <p className="mb-2">Cette application est conçue pour fonctionner dans Telegram.</p>
-          <button 
+          <button
             className="bg-blue-500 text-white px-4 py-2 rounded text-sm"
             onClick={() => window.location.href = `${window.location.pathname}?telegram=true`}
           >
@@ -101,7 +101,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {import.meta.env.DEV && <TelegramDebugPanel />}
+      {/* {import.meta.env.DEV && <TelegramDebugPanel />} */}
     </div>
   );
 };

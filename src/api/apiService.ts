@@ -27,13 +27,21 @@ class ApiService {
         const fetchOptions: RequestInit = {
             method: options.method || 'GET',
             headers,
-            credentials: 'include'
+            // Utiliser 'include' au lieu de 'same-origin' pour résoudre les problèmes CORS
+            credentials: 'include',
+            mode: 'cors'
         };
 
         // Ajouter le body si nécessaire (et le sérialiser en JSON)
         if (options.body) {
             fetchOptions.body = JSON.stringify(options.body);
         }
+
+        console.log(`API Request to ${url}`, {
+            method: fetchOptions.method,
+            headers: fetchOptions.headers,
+            credentials: fetchOptions.credentials
+        });
 
         try {
             // Effectuer la requête

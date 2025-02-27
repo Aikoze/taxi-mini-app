@@ -14,6 +14,7 @@ const TakeRidePage: React.FC = () => {
   const { showAlert } = useTelegram();
   
   useEffect(() => {
+    // Charger les courses disponibles une seule fois au chargement
     fetchAvailableRides();
     
     // Rafraîchir les courses disponibles toutes les 30 secondes
@@ -22,7 +23,7 @@ const TakeRidePage: React.FC = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchAvailableRides]);
+  }, []);  // Utiliser un tableau de dépendances vide pour n'exécuter qu'une seule fois
   
   const handleShowInterest = async (rideId: number, location: { latitude: number; longitude: number }) => {
     try {

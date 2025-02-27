@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }
             } catch (error) {
                 console.error('Erreur lors de la validation avec le backend:', error);
-                
+
                 // En cas d'erreur avec le backend, si nous sommes en production et dans un iframe,
                 // permettre à l'utilisateur de continuer avec une authentification simulée
                 if (!import.meta.env.DEV && window !== window.parent) {
@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
             // Si nous n'avons pas d'utilisateur Telegram mais que nous sommes dans un iframe,
             // créer un utilisateur Telegram fictif pour permettre l'inscription
-            const userToUse = telegramUser || (window !== window.parent ? {
+            const userToUse = telegramUser || (import.meta.env.DEV ? {
                 id: Date.now(), // Utiliser un ID basé sur le timestamp
                 first_name: "Utilisateur",
                 last_name: "Telegram",
