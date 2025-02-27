@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RidesProvider } from './contexts/RidesContext';
@@ -10,6 +10,7 @@ import TakeRidePage from './pages/TakeRidePage';
 import ProfilePage from './pages/ProfilePage';
 import MyRidesPage from './pages/MyRidesPages';
 import TelegramDebugPanel from './components/common/TelegramDebugPanel';
+import WebApp from '@twa-dev/sdk';
 
 // Route protégée qui nécessite une authentification
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,6 +69,17 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   const { inTelegram } = useTelegram();
+
+  // Initialize Telegram WebApp
+  useEffect(() => {
+    try {
+      console.log('Initializing Telegram WebApp from App component');
+      WebApp.ready();
+      console.log('Telegram WebApp initialized successfully');
+    } catch (error) {
+      console.error('Error initializing Telegram WebApp:', error);
+    }
+  }, []);
 
   return (
     <div className="App max-w-md mx-auto h-screen">

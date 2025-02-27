@@ -13,54 +13,58 @@ import {
     showTelegramAlert,
     showTelegramConfirm,
     getTelegramTheme,
-    isInTelegram
-} from '../utils/telegram';
-import { TelegramUser } from '../types/telegram';
+    isInTelegram,
+    twaDevWebApp as WebApp
+} from '../utils/telegramSdk';
 
 export const useTelegram = () => {
     const [initialized, setInitialized] = useState<boolean>(false);
     const [telegramDetected, setTelegramDetected] = useState<boolean>(false);
 
     useEffect(() => {
-        // Vérifier si Telegram est disponible
+        // Check if Telegram is available
         const checkTelegram = () => {
-            // Utiliser la fonction isInTelegram pour une détection plus fiable
+            // Use isInTelegram function for more reliable detection
             const isTelegramAvailable = isInTelegram();
             console.log('Checking Telegram availability:', isTelegramAvailable);
             setTelegramDetected(isTelegramAvailable);
 
             if (isTelegramAvailable && !initialized) {
+                // Initialize Telegram app
                 initTelegramApp();
                 setInitialized(true);
+                console.log('Telegram WebApp initialized from hook');
             }
         };
 
-        // Vérifier immédiatement et après plusieurs délais
-        // Certains environnements Telegram peuvent prendre du temps à initialiser l'API
         checkTelegram();
-        
-        const timeoutIds = [
-            setTimeout(checkTelegram, 500),
-            setTimeout(checkTelegram, 1000),
-            setTimeout(checkTelegram, 2000)
-        ];
-
-        return () => timeoutIds.forEach(id => clearTimeout(id));
     }, [initialized]);
 
     return {
+        telegramDetected,
         initialized,
         inTelegram: telegramDetected,
         user: getTelegramUser(),
         initData: getTelegramInitData(),
+        
+        // Main button functions
         setMainButtonVisible,
         setMainButtonText,
         setMainButtonLoading,
         onMainButtonClick,
+        
+        // App functions
         close: closeTelegramWebApp,
-        requestLocation,
         showAlert: showTelegramAlert,
         showConfirm: showTelegramConfirm,
-        theme: getTelegramTheme()
+        
+        // Theme
+        theme: getTelegramTheme(),
+        
+        // Location
+        requestLocation,
+        
+        // Direct access to WebApp
+        WebApp
     };
 };

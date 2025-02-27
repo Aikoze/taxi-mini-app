@@ -1,13 +1,145 @@
 // src/utils/telegramMock.ts
 export function setupTelegramMock() {
     if (window.Telegram) {
-      console.log('Telegram API déjà disponible, skip mock');
+      console.log('Telegram API already available, skipping mock');
       return;
     }
   
-    console.log('Configuration du mock Telegram WebApp...');
+    console.log('Setting up Telegram WebApp mock...');
   
-    // Créer l'objet Telegram mock
+    // Create mock Telegram object
+    const mainButton = {
+      isActive: true,
+      isVisible: false,
+      isProgressVisible: false,
+      text: "CONTINUE",
+      color: "#2AABEE",
+      textColor: "#ffffff",
+      show: function() {
+        console.log('MainButton.show() called');
+        this.isVisible = true;
+      },
+      hide: function() {
+        console.log('MainButton.hide() called');
+        this.isVisible = false;
+      },
+      enable: function() {
+        console.log('MainButton.enable() called');
+        this.isActive = true;
+      },
+      disable: function() {
+        console.log('MainButton.disable() called');
+        this.isActive = false;
+      },
+      showProgress: function(leaveActive) {
+        console.log('MainButton.showProgress() called', { leaveActive });
+        this.isProgressVisible = true;
+      },
+      hideProgress: function() {
+        console.log('MainButton.hideProgress() called');
+        this.isProgressVisible = false;
+      },
+      setText: function(text) {
+        console.log('MainButton.setText() called', { text });
+        this.text = text;
+      },
+      onClick: function(callback) {
+        console.log('MainButton.onClick() registered');
+        document.addEventListener('mockMainButtonClick', callback);
+      },
+      offClick: function(callback) {
+        console.log('MainButton.offClick() called');
+        document.removeEventListener('mockMainButtonClick', callback);
+      },
+      setParams: function(params) {
+        console.log('MainButton.setParams() called', params);
+        if (params.color) this.color = params.color;
+        if (params.text) this.text = params.text;
+        if (params.text_color) this.textColor = params.text_color;
+        if (params.is_active !== undefined) this.isActive = params.is_active;
+        if (params.is_visible !== undefined) this.isVisible = params.is_visible;
+      }
+    };
+
+    const backButton = {
+      isVisible: false,
+      show: function() {
+        console.log('BackButton.show() called');
+        this.isVisible = true;
+      },
+      hide: function() {
+        console.log('BackButton.hide() called');
+        this.isVisible = false;
+      },
+      onClick: function(callback) {
+        console.log('BackButton.onClick() registered');
+        document.addEventListener('mockBackButtonClick', callback);
+      },
+      offClick: function(callback) {
+        console.log('BackButton.offClick() called');
+        document.removeEventListener('mockBackButtonClick', callback);
+      }
+    };
+
+    const hapticFeedback = {
+      impactOccurred: function(style) {
+        console.log('HapticFeedback.impactOccurred() called', { style });
+        return this;
+      },
+      notificationOccurred: function(type) {
+        console.log('HapticFeedback.notificationOccurred() called', { type });
+        return this;
+      },
+      selectionChanged: function() {
+        console.log('HapticFeedback.selectionChanged() called');
+        return this;
+      }
+    };
+
+    const cloudStorage = {
+      setItem: function(key, value, callback) {
+        console.log('CloudStorage.setItem() called', { key, value });
+        localStorage.setItem(`tg_cloud_${key}`, value);
+        if (callback) callback(null, true);
+      },
+      getItem: function(key, callback) {
+        console.log('CloudStorage.getItem() called', { key });
+        const value = localStorage.getItem(`tg_cloud_${key}`);
+        if (callback) callback(null, value);
+      },
+      getItems: function(keys, callback) {
+        console.log('CloudStorage.getItems() called', { keys });
+        const result = {};
+        keys.forEach(key => {
+          result[key] = localStorage.getItem(`tg_cloud_${key}`);
+        });
+        if (callback) callback(null, result);
+      },
+      getKeys: function(callback) {
+        console.log('CloudStorage.getKeys() called');
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('tg_cloud_')) {
+            keys.push(key.substring(9));
+          }
+        }
+        if (callback) callback(null, keys);
+      },
+      removeItem: function(key, callback) {
+        console.log('CloudStorage.removeItem() called', { key });
+        localStorage.removeItem(`tg_cloud_${key}`);
+        if (callback) callback(null, true);
+      },
+      removeItems: function(keys, callback) {
+        console.log('CloudStorage.removeItems() called', { keys });
+        keys.forEach(key => {
+          localStorage.removeItem(`tg_cloud_${key}`);
+        });
+        if (callback) callback(null, true);
+      }
+    };
+
     window.Telegram = {
       WebApp: {
         initData: "mock_init_data",
@@ -20,145 +152,163 @@ export function setupTelegramMock() {
             username: "testuser",
             language_code: "fr"
           },
-          auth_date: Date.now().toString(),
+          auth_date: Math.floor(Date.now() / 1000),
           hash: "mock_hash"
         },
+        platform: "weba",
         colorScheme: "light",
+        themeParams: {
+          bg_color: "#ffffff",
+          secondary_bg_color: "#f0f0f0",
+          text_color: "#222222",
+          hint_color: "#999999",
+          link_color: "#2AABEE",
+          button_color: "#2AABEE",
+          button_text_color: "#ffffff",
+        },
+        isClosingConfirmationEnabled: false,
+        headerColor: "#ffffff",
         backgroundColor: "#ffffff",
-        textColor: "#222222",
-        secondaryBackgroundColor: "#f5f5f5",
-        buttonColor: "#2AABEE",
-        buttonTextColor: "#ffffff",
-        hintColor: "#999999",
-        
-        isExpanded: false,
+        isExpanded: true,
         viewportHeight: window.innerHeight,
         viewportStableHeight: window.innerHeight,
+        version: "6.0",
         
+        // Main button
+        MainButton: mainButton,
+        
+        // Back button
+        BackButton: backButton,
+        
+        // Haptic feedback
+        HapticFeedback: hapticFeedback,
+        
+        // Cloud storage
+        CloudStorage: cloudStorage,
+        
+        // Methods
+        ready: function() {
+          console.log('Telegram WebApp.ready() called');
+        },
         expand: function() {
-          this.isExpanded = true;
-          console.log("WebApp expanded");
+          console.log('Telegram WebApp.expand() called');
         },
         close: function() {
-          console.log("WebApp closed");
+          console.log('Telegram WebApp.close() called');
         },
-        
-        MainButton: {
-          text: "Continuer",
-          color: "#2AABEE",
-          textColor: "#ffffff",
-          isVisible: false,
-          isActive: true,
-          isProgressVisible: false,
-          setText: function(text) {
-            this.text = text;
-            console.log("Main button text set to:", text);
-          },
-          onClick: function(callback) {
-            this._callback = callback;
-          },
-          offClick: function(callback) {
-            this._callback = null;
-          },
-          show: function() {
-            this.isVisible = true;
-            console.log("Main button shown");
-          },
-          hide: function() {
-            this.isVisible = false;
-            console.log("Main button hidden");
-          },
-          enable: function() {
-            this.isActive = true;
-          },
-          disable: function() {
-            this.isActive = false;
-          },
-          showProgress: function() {
-            this.isProgressVisible = true;
-          },
-          hideProgress: function() {
-            this.isProgressVisible = false;
-          },
-          setParams: function(params) {
-            if (params.text) this.text = params.text;
-            if (params.color) this.color = params.color;
-            if (params.text_color) this.textColor = params.text_color;
-            if (params.is_active !== undefined) this.isActive = params.is_active;
-            if (params.is_visible !== undefined) this.isVisible = params.is_visible;
-            console.log("Main button params set:", params);
-          }
+        onEvent: function(eventName, callback) {
+          console.log('Telegram WebApp.onEvent() called', { eventName });
+          document.addEventListener(`mockTelegram${eventName}`, callback);
         },
-        
-        BackButton: {
-          isVisible: false,
-          show: function() {
-            this.isVisible = true;
-          },
-          hide: function() {
-            this.isVisible = false;
-          },
-          onClick: function(callback) {
-            this._callback = callback;
-          },
-          offClick: function(callback) {
-            this._callback = null;
-          }
+        offEvent: function(eventName, callback) {
+          console.log('Telegram WebApp.offEvent() called', { eventName });
+          document.removeEventListener(`mockTelegram${eventName}`, callback);
         },
-        
-        ready: function() {
-          console.log("WebApp ready");
+        sendData: function(data) {
+          console.log('Telegram WebApp.sendData() called', { data });
         },
-        showAlert: function(message) {
-          alert(message);
+        openLink: function(link, options) {
+          console.log('Telegram WebApp.openLink() called', { link, options });
+          window.open(link, '_blank');
+        },
+        openTelegramLink: function(link) {
+          console.log('Telegram WebApp.openTelegramLink() called', { link });
+          window.open(`https://t.me/${link}`, '_blank');
+        },
+        isVersionAtLeast: function(version) {
+          console.log('Telegram WebApp.isVersionAtLeast() called', { version });
+          return true;
+        },
+        openInvoice: function(url, callback) {
+          console.log('Telegram WebApp.openInvoice() called', { url });
+          if (callback) setTimeout(() => callback('paid'), 1000);
+        },
+        setHeaderColor: function(color) {
+          console.log('Telegram WebApp.setHeaderColor() called', { color });
+          this.headerColor = color;
+        },
+        setBackgroundColor: function(color) {
+          console.log('Telegram WebApp.setBackgroundColor() called', { color });
+          this.backgroundColor = color;
         },
         showConfirm: function(message, callback) {
-          const confirmed = confirm(message);
-          callback(confirmed);
+          console.log('Telegram WebApp.showConfirm() called', { message });
+          const confirmed = window.confirm(message);
+          if (callback) callback(confirmed);
         },
-        
-        geolocation: {
-          getCurrentPosition: function(success, error, options) {
-            // Simuler une position à Marseille
-            success({
-              coords: {
-                latitude: 43.2965,
-                longitude: 5.3698,
-                altitude: null,
-                accuracy: 10,
-                altitudeAccuracy: null,
-                heading: null,
-                speed: null,
-                toJSON: function() {
-                  return {
-                    latitude: this.latitude,
-                    longitude: this.longitude,
-                    altitude: this.altitude,
-                    accuracy: this.accuracy,
-                    altitudeAccuracy: this.altitudeAccuracy,
-                    heading: this.heading,
-                    speed: this.speed
-                  };
-                }
-              },
-              timestamp: Date.now(),
-              toJSON: function() {
-                return {
-                  coords: this.coords,
-                  timestamp: this.timestamp
-                };
-              }
-            });
-          }
+        showPopup: function(params, callback) {
+          console.log('Telegram WebApp.showPopup() called', params);
+          alert(params.message);
+          if (callback) callback(params.buttons?.[0]?.id || null);
         },
-        
-        sendData: function(data) {
-          console.log("Data sent to bot:", data);
+        showAlert: function(message, callback) {
+          console.log('Telegram WebApp.showAlert() called', { message });
+          alert(message);
+          if (callback) callback();
         },
-        onEvent: function(eventType, callback) {},
-        offEvent: function(eventType, callback) {}
+        enableClosingConfirmation: function() {
+          console.log('Telegram WebApp.enableClosingConfirmation() called');
+          this.isClosingConfirmationEnabled = true;
+        },
+        disableClosingConfirmation: function() {
+          console.log('Telegram WebApp.disableClosingConfirmation() called');
+          this.isClosingConfirmationEnabled = false;
+        },
+        showScanQrPopup: function(params, callback) {
+          console.log('Telegram WebApp.showScanQrPopup() called', params);
+          setTimeout(() => {
+            if (callback && callback('https://example.com') !== true) {
+              this.closeScanQrPopup();
+            }
+          }, 3000);
+        },
+        closeScanQrPopup: function() {
+          console.log('Telegram WebApp.closeScanQrPopup() called');
+        },
+        readTextFromClipboard: function(callback) {
+          console.log('Telegram WebApp.readTextFromClipboard() called');
+          if (callback) callback('Mock clipboard text');
+        },
+        switchInlineQuery: function(query, chooseChatTypes) {
+          console.log('Telegram WebApp.switchInlineQuery() called', { query, chooseChatTypes });
+        },
+        requestWriteAccess: function(callback) {
+          console.log('Telegram WebApp.requestWriteAccess() called');
+          if (callback) callback(true);
+        },
+        requestContact: function(callback) {
+          console.log('Telegram WebApp.requestContact() called');
+          if (callback) callback(true);
+        }
       }
     };
-  
-    console.log('Mock Telegram WebApp configuré avec succès');
-  }
+    
+    // Add mock button to the UI for testing
+    const mockButtonContainer = document.createElement('div');
+    mockButtonContainer.style.position = 'fixed';
+    mockButtonContainer.style.bottom = '80px';
+    mockButtonContainer.style.left = '0';
+    mockButtonContainer.style.right = '0';
+    mockButtonContainer.style.display = 'flex';
+    mockButtonContainer.style.justifyContent = 'center';
+    mockButtonContainer.style.zIndex = '9999';
+    
+    const mockButton = document.createElement('button');
+    mockButton.textContent = 'TRIGGER MAIN BUTTON';
+    mockButton.style.padding = '10px 20px';
+    mockButton.style.backgroundColor = '#2AABEE';
+    mockButton.style.color = 'white';
+    mockButton.style.border = 'none';
+    mockButton.style.borderRadius = '8px';
+    mockButton.style.cursor = 'pointer';
+    
+    mockButton.addEventListener('click', () => {
+      const event = new Event('mockMainButtonClick');
+      document.dispatchEvent(event);
+    });
+    
+    mockButtonContainer.appendChild(mockButton);
+    document.body.appendChild(mockButtonContainer);
+    
+    console.log('Telegram WebApp mock setup complete');
+}

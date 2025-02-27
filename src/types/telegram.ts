@@ -1,93 +1,8 @@
 // src/types/telegram.ts
-export interface TelegramWebApp {
-    initData: string;
-    initDataUnsafe: {
-        query_id: string;
-        user: TelegramUser;
-        auth_date: string;
-        hash: string;
-    };
-    colorScheme: 'light' | 'dark';
-    backgroundColor: string;
-    textColor: string;
-    secondaryBackgroundColor: string;
-    buttonColor: string;
-    buttonTextColor: string;
-    hintColor: string;
+// Nous utilisons maintenant les types fournis par le SDK, mais gardons quelques types personnalisés pour la compatibilité
 
-    isExpanded: boolean;
-    viewportHeight: number;
-    viewportStableHeight: number;
 
-    expand: () => void;
-    close: () => void;
-
-    MainButton: {
-        text: string;
-        color: string;
-        textColor: string;
-        isVisible: boolean;
-        isActive: boolean;
-        isProgressVisible: boolean;
-        setText: (text: string) => void;
-        onClick: (callback: () => void) => void;
-        offClick: (callback: () => void) => void;
-        show: () => void;
-        hide: () => void;
-        enable: () => void;
-        disable: () => void;
-        showProgress: () => void;
-        hideProgress: () => void;
-        setParams: (params: {
-            text?: string;
-            color?: string;
-            text_color?: string;
-            is_active?: boolean;
-            is_visible?: boolean;
-        }) => void;
-    };
-
-    BackButton: {
-        isVisible: boolean;
-        show: () => void;
-        hide: () => void;
-        onClick: (callback: () => void) => void;
-        offClick: (callback: () => void) => void;
-    };
-
-    ready: () => void;
-    showAlert: (message: string) => void;
-    showConfirm: (message: string, callback: (confirmed: boolean) => void) => void;
-
-    geolocation?: {
-        getCurrentPosition: (
-            success: PositionCallback,
-            error: PositionErrorCallback,
-            options?: PositionOptions
-        ) => void;
-    };
-
-    sendData: (data: string) => void;
-    onEvent: (eventType: string, callback: () => void) => void;
-    offEvent: (eventType: string, callback: () => void) => void;
-}
-
-export const isInTelegram = (): boolean => {
-    // Log détaillé pour le débogage
-    console.log('Telegram WebApp detection:', {
-        telegramExists: !!window.Telegram,
-        webAppExists: !!window.Telegram?.WebApp,
-        userInfo: window.Telegram?.WebApp?.initDataUnsafe?.user,
-        initData: window.Telegram?.WebApp?.initData?.substring(0, 20) + '...'
-    });
-
-    if (import.meta.env.DEV) {
-        return true;
-    }
-
-    return !!window.Telegram?.WebApp;
-};
-
+// Type utilisateur Telegram pour la compatibilité avec le code existant
 export interface TelegramUser {
     id: number;
     first_name: string;
@@ -98,10 +13,12 @@ export interface TelegramUser {
     is_premium?: boolean;
 }
 
+// Déclaration globale pour le type Window
 declare global {
     interface Window {
         Telegram?: {
-            WebApp: TelegramWebApp;
+            WebApp: any;
         };
+        WebApp: any;
     }
 }
