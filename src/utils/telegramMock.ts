@@ -128,9 +128,26 @@ export function setupTelegramMock() {
                 accuracy: 10,
                 altitudeAccuracy: null,
                 heading: null,
-                speed: null
+                speed: null,
+                toJSON: function() {
+                  return {
+                    latitude: this.latitude,
+                    longitude: this.longitude,
+                    altitude: this.altitude,
+                    accuracy: this.accuracy,
+                    altitudeAccuracy: this.altitudeAccuracy,
+                    heading: this.heading,
+                    speed: this.speed
+                  };
+                }
               },
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              toJSON: function() {
+                return {
+                  coords: this.coords,
+                  timestamp: this.timestamp
+                };
+              }
             });
           }
         },

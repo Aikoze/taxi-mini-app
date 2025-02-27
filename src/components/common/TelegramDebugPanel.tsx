@@ -69,11 +69,16 @@ const TelegramDebugPanel: React.FC = () => {
         <button 
           style={buttonStyle}
           onClick={() => {
-            window.Telegram?.WebApp?.geolocation?.getCurrentPosition((pos) => {
-              window.Telegram?.WebApp?.showAlert(
-                `Position: ${pos.coords.latitude}, ${pos.coords.longitude}`
-              );
-            });
+            window.Telegram?.WebApp?.geolocation?.getCurrentPosition(
+              (pos) => {
+                window.Telegram?.WebApp?.showAlert(
+                  `Position: ${pos.coords.latitude}, ${pos.coords.longitude}`
+                );
+              },
+              (error) => {
+                window.Telegram?.WebApp?.showAlert(`Error getting location: ${error.message}`);
+              }
+            );
           }}
         >
           Get Location
