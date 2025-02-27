@@ -1,91 +1,76 @@
 // src/components/common/TelegramDebugPanel.tsx
-import React from 'react';
+import React, { useState } from 'react';
 
 const TelegramDebugPanel: React.FC = () => {
-  if (!import.meta.env.DEV) return null;
-  
-  const mainButtonStyle = {
-    position: 'fixed',
-    bottom: '80px',
-    left: '0',
-    right: '0',
-    textAlign: 'center',
-    padding: '10px',
-    backgroundColor: '#2AABEE',
-    color: '#FFFFFF',
-    display: window.Telegram?.WebApp?.MainButton?.isVisible ? 'block' : 'none',
-    zIndex: 9999,
-  } as React.CSSProperties;
+    if (!import.meta.env.DEV) return null;
+    
+    const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
-  const panelStyle = {
-    position: 'fixed',
-    bottom: '0',
-    left: '0',
-    right: '0',
-    backgroundColor: '#f5f5f5',
-    borderTop: '1px solid #ddd',
-    padding: '8px',
-    display: 'flex',
-    justifyContent: 'space-around',
-    zIndex: 9999,
-  } as React.CSSProperties;
+    const panelStyle = {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        color: 'white',
+        padding: '10px',
+        fontSize: '12px',
+        zIndex: 9999,
+        maxHeight: isExpanded ? '200px' : '40px',
+        overflow: 'auto',
+        transition: 'max-height 0.3s ease-in-out'
+    } as React.CSSProperties;
 
-  const buttonStyle = {
-    padding: '6px 10px',
-    borderRadius: '4px',
-    backgroundColor: '#2AABEE',
-    color: 'white',
-    border: 'none',
-    fontSize: '12px',
-  };
+    const buttonStyle = {
+        padding: '4px 8px',
+        backgroundColor: '#2AABEE',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        marginRight: '5px',
+        cursor: 'pointer',
+        fontSize: '11px'
+    } as React.CSSProperties;
 
-  return (
-    <>
-      {/* Simuler le bouton principal de Telegram */}
-      <div style={mainButtonStyle}>
-        {window.Telegram?.WebApp?.MainButton?.text || 'Continuer'}
-      </div>
+    const headerStyle = {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: isExpanded ? '8px' : '0'
+    } as React.CSSProperties;
 
-      {/* Panneau de debug */}
-      <div style={panelStyle}>
-        <button 
-          style={buttonStyle}
-          onClick={() => window.Telegram?.WebApp?.MainButton?.show()}
-        >
-          Show Main Button
-        </button>
-        <button 
-          style={buttonStyle}
-          onClick={() => window.Telegram?.WebApp?.MainButton?.hide()}
-        >
-          Hide Main Button
-        </button>
-        <button 
-          style={buttonStyle}
-          onClick={() => window.Telegram?.WebApp?.showAlert('Test alert')}
-        >
-          Show Alert
-        </button>
-        <button 
-          style={buttonStyle}
-          onClick={() => {
-            window.Telegram?.WebApp?.geolocation?.getCurrentPosition(
-              (pos) => {
-                window.Telegram?.WebApp?.showAlert(
-                  `Position: ${pos.coords.latitude}, ${pos.coords.longitude}`
-                );
-              },
-              (error) => {
-                window.Telegram?.WebApp?.showAlert(`Error getting location: ${error.message}`);
-              }
-            );
-          }}
-        >
-          Get Location
-        </button>
-      </div>
-    </>
-  );
+    return (
+        <div style={panelStyle}>
+            <div style={headerStyle}>
+                <strong>Telegram Debug {isExpanded ? '' : '(Masqué)'}</strong>
+                <div>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        style={buttonStyle}
+                    >
+                        {isExpanded ? 'Masquer' : 'Afficher'}
+                    </button>
+                    <button
+                        onClick={() => window.location.href = `${window.location.pathname}?telegram=true`}
+                        style={buttonStyle}
+                    >
+                        Force Telegram Mode
+                    </button>
+                </div>
+            </div>
+            
+            {isExpanded && (
+                <div>
+                    <pre>{JSON.stringify({
+                        telegramExists: !!window.Telegram,
+                        webAppExists: !!window.Telegram?.WebApp,
+                        userInfo: window.Telegram?.WebApp?.initDataUnsafe?.user,
+                        href: window.location.href
+                    }, null, 2)}</pre>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default TelegramDebugPanel;

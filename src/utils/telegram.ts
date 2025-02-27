@@ -5,10 +5,23 @@ import { TelegramWebApp, TelegramUser } from '../types/telegram';
 const telegram: TelegramWebApp | undefined = window.Telegram?.WebApp;
 
 // Vérifie si l'application est exécutée dans l'environnement Telegram
+// Modification de isInTelegram()
 export const isInTelegram = (): boolean => {
-    return !!telegram;
-};
+    // Vérifier le paramètre d'URL pour le dev
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceTelegram = urlParams.get('telegram') === 'true';
 
+    if (import.meta.env.DEV) {
+        return true;
+      }
+      
+    if (forceTelegram) {
+        console.log('Mode Telegram forcé par paramètre URL');
+        return true;
+    }
+
+    return !!window.Telegram?.WebApp;
+};
 // Initialise l'application et configure les paramètres requis par Telegram
 export const initTelegramApp = (): boolean => {
     if (!isInTelegram()) {
@@ -17,11 +30,11 @@ export const initTelegramApp = (): boolean => {
     }
 
     // Expansion à la hauteur maximale
-    telegram.expand();
+    window.Telegram?.WebApp?.expand();
 
     // Activation du bouton principal si besoin
-    if (telegram.MainButton) {
-        telegram.MainButton.setParams({
+    if (window.Telegram?.WebApp?.MainButton) {
+        window.Telegram.WebApp.MainButton.setParams({
             text: 'Continuer',
             color: '#2AABEE',
             text_color: '#ffffff',
@@ -30,66 +43,66 @@ export const initTelegramApp = (): boolean => {
     }
 
     // Notification à Telegram que l'application est prête
-    telegram.ready();
+    window.Telegram?.WebApp?.ready();
 
     return true;
 };
 
 // Obtenir les données utilisateur de Telegram
 export const getTelegramUser = (): TelegramUser | null => {
-    if (!isInTelegram()) {
+    if (!isInTelegram() || !window.Telegram?.WebApp) {
         return null;
     }
-    return telegram.initDataUnsafe?.user || null;
+    return window.Telegram.WebApp.initDataUnsafe?.user || null;
 };
 
 // Obtenir la chaîne de données d'initialisation complète
 export const getTelegramInitData = (): string | null => {
-    if (!isInTelegram()) {
+    if (!isInTelegram() || !window.Telegram?.WebApp) {
         return null;
     }
-    return telegram.initData || null;
+    return window.Telegram.WebApp.initData || null;
 };
 
 // Gestion du bouton principal
 export const setMainButtonVisible = (visible = true): void => {
-    if (!isInTelegram() || !telegram.MainButton) {
+    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
         return;
     }
 
     if (visible) {
-        telegram.MainButton.show();
+        window.Telegram.WebApp.MainButton.show();
     } else {
-        telegram.MainButton.hide();
+        window.Telegram.WebApp.MainButton.hide();
     }
 };
 
 export const setMainButtonText = (text: string): void => {
-    if (!isInTelegram() || !telegram.MainButton) {
+    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
         return;
     }
 
-    telegram.MainButton.setText(text);
+    window.Telegram.WebApp.MainButton.setText(text);
 };
 
 export const setMainButtonLoading = (loading = true): void => {
-    if (!isInTelegram() || !telegram.MainButton) {
+    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
         return;
     }
 
     if (loading) {
-        telegram.MainButton.showProgress();
+        window.Telegram.WebApp.MainButton.showProgress();
     } else {
-        telegram.MainButton.hideProgress();
+        window.Telegram.WebApp.MainButton.hideProgress();
     }
 };
 
 export const onMainButtonClick = (callback: () => void): void => {
-    if (!isInTelegram() || !telegram.MainButton) {
+    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
         return;
     }
 
-    telegram.MainButton.onClick(callback);
+    window.Telegram.WebApp.MainButton.onClick(callback);
 };
 
 // Fermer l'application Web
@@ -98,7 +111,7 @@ export const closeTelegramWebApp = (): void => {
         return;
     }
 
-    telegram.close();
+    window.Telegram?.WebApp?.close();
 };
 
 // Ouvrir le mode de sélection de localisation
@@ -109,13 +122,13 @@ export const requestLocation = async (): Promise<{ latitude: number, longitude: 
 
     try {
         // Vérifier si la géolocalisation est disponible
-        if (!telegram.geolocation) {
+        if (!window.Telegram?.WebApp?.geolocation) {
             throw new Error('Géolocalisation non supportée dans cette version de Telegram');
         }
 
         // Demander la position
         return new Promise((resolve, reject) => {
-            telegram.geolocation?.getCurrentPosition(
+            window.Telegram.WebApp.geolocation?.getCurrentPosition(
                 position => {
                     resolve({
                         latitude: position.coords.latitude,
@@ -141,7 +154,7 @@ export const showTelegramAlert = (message: string): void => {
         return;
     }
 
-    telegram.showAlert(message);
+    window.Telegram?.WebApp?.showAlert(message);
 };
 
 // Afficher une popup de confirmation
@@ -151,7 +164,7 @@ export const showTelegramConfirm = (message: string): Promise<boolean> => {
     }
 
     return new Promise((resolve) => {
-        telegram.showConfirm(message, (confirmed) => {
+        window.Telegram.WebApp.showConfirm(message, (confirmed) => {
             resolve(confirmed);
         });
     });
@@ -182,15 +195,15 @@ export const getTelegramTheme = (): TelegramTheme => {
     }
 
     return {
-        colorScheme: telegram.colorScheme || 'light',
-        backgroundColor: telegram.backgroundColor || '#ffffff',
-        secondaryBackgroundColor: telegram.secondaryBackgroundColor || '#f5f5f5',
-        textColor: telegram.textColor || '#222222',
-        buttonColor: telegram.buttonColor || '#2AABEE',
-        buttonTextColor: telegram.buttonTextColor || '#ffffff',
-        hintColor: telegram.hintColor || '#999999'
+        colorScheme: window.Telegram.WebApp.colorScheme || 'light',
+        backgroundColor: window.Telegram.WebApp.backgroundColor || '#ffffff',
+        secondaryBackgroundColor: window.Telegram.WebApp.secondaryBackgroundColor || '#f5f5f5',
+        textColor: window.Telegram.WebApp.textColor || '#222222',
+        buttonColor: window.Telegram.WebApp.buttonColor || '#2AABEE',
+        buttonTextColor: window.Telegram.WebApp.buttonTextColor || '#ffffff',
+        hintColor: window.Telegram.WebApp.hintColor || '#999999'
     };
 };
 
 // Export de l'objet Telegram WebApp pour un accès direct
-export default telegram;
+export default window.Telegram?.WebApp;
