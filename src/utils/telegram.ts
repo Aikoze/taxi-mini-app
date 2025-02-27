@@ -48,8 +48,34 @@ export const isInTelegram = (): boolean => {
 // Initialise l'application et configure les paramètres requis par Telegram
 export const initTelegramApp = (): boolean => {
     if (!isInTelegram()) {
-        console.warn('L\'application n\'est pas exécutée dans Telegram.');
         return false;
+    }
+
+    // Si l'objet Telegram n'est pas disponible mais que nous sommes dans Telegram
+    // (cas détecté par isInIframe ou hasInitData), créer un objet de remplacement
+    if (!window.Telegram?.WebApp) {
+        console.log('Telegram WebApp API non disponible, création d\'un objet de remplacement');
+        // Créer un objet Telegram minimal pour éviter les erreurs
+        window.Telegram = {
+            WebApp: {
+                isExpanded: true,
+                expand: () => {},
+                ready: () => {},
+                MainButton: {
+                    text: 'Continuer',
+                    isVisible: false,
+                    show: () => {},
+                    hide: () => {},
+                    setText: () => {},
+                    onClick: () => {},
+                    showProgress: () => {},
+                    hideProgress: () => {},
+                    setParams: () => {}
+                },
+                showAlert: (message: string) => { alert(message); },
+                close: () => {}
+            } as any
+        };
     }
 
     // Expansion à la hauteur maximale
@@ -61,7 +87,6 @@ export const initTelegramApp = (): boolean => {
             text: 'Continuer',
             color: '#2AABEE',
             text_color: '#ffffff',
-            is_visible: false
         });
     }
 
@@ -74,6 +99,15 @@ export const initTelegramApp = (): boolean => {
 // Obtenir les données utilisateur de Telegram
 export const getTelegramUser = (): TelegramUser | null => {
     if (!isInTelegram() || !window.Telegram?.WebApp) {
+        // En production, si nous sommes dans un iframe Telegram mais sans l'API,
+        // créer un utilisateur par défaut pour permettre à l'application de fonctionner
+        if (!import.meta.env.DEV && (window !== window.parent)) {
+            return {
+                id: 0,
+                first_name: "Utilisateur",
+                last_name: "Telegram"
+            };
+        }
         return null;
     }
     return window.Telegram.WebApp.initDataUnsafe?.user || null;
@@ -82,6 +116,15 @@ export const getTelegramUser = (): TelegramUser | null => {
 // Obtenir la chaîne de données d'initialisation complète
 export const getTelegramInitData = (): string | null => {
     if (!isInTelegram() || !window.Telegram?.WebApp) {
+        // Essayer d'extraire les données d'initialisation de l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        
+        const initData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
+        if (initData) {
+            return initData;
+        }
+        
         return null;
     }
     return window.Telegram.WebApp.initData || null;

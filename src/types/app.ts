@@ -1,7 +1,7 @@
 // src/types/app.ts
 export interface User {
-    id: number;
-    telegram_id: string;
+    id: string;
+    telegram_id: number;
     username: string;
     first_name: string;
     last_name: string;
@@ -81,5 +81,6 @@ export interface User {
   export interface ApiResponse<T> {
     success: boolean;
     data?: T;
+    message?: string;
     error?: string;
   }

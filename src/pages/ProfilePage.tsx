@@ -1,6 +1,7 @@
 // src/pages/ProfilePage.tsx
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTelegram } from '../hooks/useTelegram';
 import MainLayout from '../components/layout/MainLayout';
 import Registration from '../components/Profile/Registration';
 import LoadingScreen from '../components/common/LoadingScreen';
@@ -8,6 +9,7 @@ import Card from '../components/common/Card';
 
 const ProfilePage: React.FC = () => {
   const { user, telegramUser, isLoading, isAuthenticated } = useAuth();
+  const { inTelegram } = useTelegram();
   
   if (isLoading) {
     return <LoadingScreen />;
@@ -36,9 +38,21 @@ const ProfilePage: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-10">
-              <p className="text-gray-600">
-                Veuillez ouvrir cette application depuis Telegram.
-              </p>
+              {inTelegram ? (
+                <div>
+                  <p className="text-gray-600 mb-4">
+                    Informations utilisateur Telegram non disponibles.
+                  </p>
+                  <p className="text-gray-600 mb-6">
+                    Vous pouvez quand même vous inscrire en fournissant vos informations ci-dessous.
+                  </p>
+                  <Registration onSuccess={() => window.location.reload()} />
+                </div>
+              ) : (
+                <p className="text-gray-600">
+                  Veuillez ouvrir cette application depuis Telegram.
+                </p>
+              )}
             </div>
           )}
         </div>
