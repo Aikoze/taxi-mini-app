@@ -1,27 +1,26 @@
 // src/utils/telegram.ts
-import { TelegramWebApp, TelegramUser } from '../types/telegram';
+import { TelegramWebApp, TelegramUser, TelegramTheme } from '../types/telegram';
 
-// Référence à l'objet global Telegram
+// Reference to the global Telegram object
 const telegram: TelegramWebApp | undefined = window.Telegram?.WebApp;
 
-// Vérifie si l'application est exécutée dans l'environnement Telegram
-// Modification de isInTelegram()
+// Check if the application is running in the Telegram environment
 export const isInTelegram = (): boolean => {
-    // Vérifier le paramètre d'URL pour le dev
+    // Check URL parameter for dev mode
     const urlParams = new URLSearchParams(window.location.search);
     const forceTelegram = urlParams.get('telegram') === 'true';
     
-    // Vérifier si nous sommes dans un iframe (cas typique des mini-apps Telegram)
+    // Check if we're in an iframe (typical for Telegram mini-apps)
     const isInIframe = window !== window.parent;
     
-    // Vérifier si l'objet Telegram est disponible
+    // Check if the Telegram object is available
     const hasTelegramObject = !!window.Telegram?.WebApp;
     
-    // Vérifier si l'URL contient des paramètres spécifiques à Telegram
+    // Check if the URL contains Telegram-specific parameters
     const hasInitData = window.location.hash.includes('tgWebAppData') || 
                         window.location.search.includes('tgWebAppData');
     
-    // Log pour le débogage
+    // Log for debugging
     console.log('Telegram detection:', { 
         isInIframe, 
         hasTelegramObject, 
@@ -29,247 +28,232 @@ export const isInTelegram = (): boolean => {
         forceTelegram,
         isDev: import.meta.env.DEV 
     });
-
-    // En mode développement, considérer que nous sommes toujours dans Telegram
-    if (import.meta.env.DEV) {
+    
+    // In development mode, consider we're in Telegram if forced via URL
+    if (import.meta.env.DEV && forceTelegram) {
+        console.log('Telegram mode forced via URL parameter in dev mode');
         return true;
     }
     
-    // Si le paramètre d'URL est présent, forcer le mode Telegram
-    if (forceTelegram) {
-        console.log('Mode Telegram forcé par paramètre URL');
-        return true;
-    }
-
-    // En production, vérifier plusieurs conditions
-    return hasTelegramObject || hasInitData || isInIframe;
+    return hasTelegramObject || (isInIframe && hasInitData);
 };
 
-// Initialise l'application et configure les paramètres requis par Telegram
+// Initialize the Telegram application and configure required parameters
 export const initTelegramApp = (): boolean => {
-    if (!isInTelegram()) {
+    try {
+        if (telegram) {
+            console.log('Initializing Telegram WebApp');
+            
+            // Call ready() to inform Telegram that the WebApp is ready
+            telegram.ready();
+            
+            // Configure the main button if needed
+            // telegram.MainButton.setText('CONTINUE');
+            // telegram.MainButton.show();
+            
+            console.log('Telegram WebApp initialized successfully');
+            return true;
+        } else {
+            console.warn('Telegram WebApp not available');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error initializing Telegram WebApp:', error);
         return false;
     }
-
-    // Si l'objet Telegram n'est pas disponible mais que nous sommes dans Telegram
-    // (cas détecté par isInIframe ou hasInitData), créer un objet de remplacement
-    if (!window.Telegram?.WebApp) {
-        console.log('Telegram WebApp API non disponible, création d\'un objet de remplacement');
-        // Créer un objet Telegram minimal pour éviter les erreurs
-        window.Telegram = {
-            WebApp: {
-                isExpanded: true,
-                expand: () => {},
-                ready: () => {},
-                MainButton: {
-                    text: 'Continuer',
-                    isVisible: false,
-                    show: () => {},
-                    hide: () => {},
-                    setText: () => {},
-                    onClick: () => {},
-                    showProgress: () => {},
-                    hideProgress: () => {},
-                    setParams: () => {}
-                },
-                showAlert: (message: string) => { alert(message); },
-                close: () => {}
-            } as any
-        };
-    }
-
-    // Expansion à la hauteur maximale
-    window.Telegram?.WebApp?.expand();
-
-    // Activation du bouton principal si besoin
-    if (window.Telegram?.WebApp?.MainButton) {
-        window.Telegram.WebApp.MainButton.setParams({
-            text: 'Continuer',
-            color: '#2AABEE',
-            text_color: '#ffffff',
-        });
-    }
-
-    // Notification à Telegram que l'application est prête
-    window.Telegram?.WebApp?.ready();
-
-    return true;
 };
 
-// Obtenir les données utilisateur de Telegram
+// Get Telegram user data
 export const getTelegramUser = (): TelegramUser | null => {
-    if (!isInTelegram() || !window.Telegram?.WebApp) {
-        // En production, si nous sommes dans un iframe Telegram mais sans l'API,
-        // créer un utilisateur par défaut pour permettre à l'application de fonctionner
-        if (!import.meta.env.DEV && (window !== window.parent)) {
-            return {
-                id: 0,
-                first_name: "Utilisateur",
-                last_name: "Telegram"
-            };
+    try {
+        if (telegram && telegram.initDataUnsafe.user) {
+            return telegram.initDataUnsafe.user;
         }
         return null;
+    } catch (error) {
+        console.error('Error getting Telegram user:', error);
+        return null;
     }
-    return window.Telegram.WebApp.initDataUnsafe?.user || null;
 };
 
-// Obtenir la chaîne de données d'initialisation complète
+// Get raw init data string
 export const getTelegramInitData = (): string | null => {
-    if (!isInTelegram() || !window.Telegram?.WebApp) {
-        // Essayer d'extraire les données d'initialisation de l'URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
-        
-        const initData = urlParams.get('tgWebAppData') || hashParams.get('tgWebAppData');
-        if (initData) {
-            return initData;
+    try {
+        if (telegram) {
+            return telegram.initData;
         }
-        
+        return null;
+    } catch (error) {
+        console.error('Error getting Telegram init data:', error);
         return null;
     }
-    return window.Telegram.WebApp.initData || null;
 };
 
-// Gestion du bouton principal
+// Main Button functions
 export const setMainButtonVisible = (visible = true): void => {
-    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
-        return;
-    }
-
-    if (visible) {
-        window.Telegram.WebApp.MainButton.show();
-    } else {
-        window.Telegram.WebApp.MainButton.hide();
+    try {
+        if (telegram?.MainButton) {
+            if (visible) {
+                telegram.MainButton.show();
+            } else {
+                telegram.MainButton.hide();
+            }
+        }
+    } catch (error) {
+        console.error('Error setting main button visibility:', error);
     }
 };
 
 export const setMainButtonText = (text: string): void => {
-    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
-        return;
+    try {
+        if (telegram?.MainButton) {
+            telegram.MainButton.setText(text);
+        }
+    } catch (error) {
+        console.error('Error setting main button text:', error);
     }
-
-    window.Telegram.WebApp.MainButton.setText(text);
 };
 
 export const setMainButtonLoading = (loading = true): void => {
-    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
-        return;
-    }
-
-    if (loading) {
-        window.Telegram.WebApp.MainButton.showProgress();
-    } else {
-        window.Telegram.WebApp.MainButton.hideProgress();
+    try {
+        if (telegram?.MainButton) {
+            if (loading) {
+                telegram.MainButton.showProgress();
+            } else {
+                telegram.MainButton.hideProgress();
+            }
+        }
+    } catch (error) {
+        console.error('Error setting main button loading state:', error);
     }
 };
 
 export const onMainButtonClick = (callback: () => void): void => {
-    if (!isInTelegram() || !window.Telegram?.WebApp?.MainButton) {
-        return;
-    }
-
-    window.Telegram.WebApp.MainButton.onClick(callback);
-};
-
-// Fermer l'application Web
-export const closeTelegramWebApp = (): void => {
-    if (!isInTelegram()) {
-        return;
-    }
-
-    window.Telegram?.WebApp?.close();
-};
-
-// Ouvrir le mode de sélection de localisation
-export const requestLocation = async (): Promise<{ latitude: number, longitude: number } | null> => {
-    if (!isInTelegram()) {
-        return null;
-    }
-
     try {
-        // Vérifier si la géolocalisation est disponible
-        if (!window.Telegram?.WebApp?.geolocation) {
-            throw new Error('Géolocalisation non supportée dans cette version de Telegram');
+        if (telegram?.MainButton) {
+            telegram.MainButton.onClick(callback);
         }
-
-        // Demander la position
-        return new Promise((resolve, reject) => {
-            window.Telegram.WebApp.geolocation?.getCurrentPosition(
-                position => {
-                    resolve({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    });
-                },
-                error => {
-                    reject(error);
-                },
-                { enableHighAccuracy: true }
-            );
-        });
     } catch (error) {
-        console.error('Erreur lors de la demande de localisation:', error);
-        return null;
+        console.error('Error setting main button click handler:', error);
     }
 };
 
-// Afficher une alerte via l'interface Telegram
-export const showTelegramAlert = (message: string): void => {
-    if (!isInTelegram()) {
-        alert(message);
-        return;
+// Close the WebApp
+export const closeTelegramWebApp = (): void => {
+    try {
+        if (telegram) {
+            telegram.close();
+        }
+    } catch (error) {
+        console.error('Error closing Telegram WebApp:', error);
     }
-
-    window.Telegram?.WebApp?.showAlert(message);
 };
 
-// Afficher une popup de confirmation
-export const showTelegramConfirm = (message: string): Promise<boolean> => {
-    if (!isInTelegram()) {
-        return Promise.resolve(confirm(message));
-    }
-
+// Request location
+export const requestLocation = (): Promise<{ latitude: number, longitude: number } | null> => {
     return new Promise((resolve) => {
-        window.Telegram.WebApp.showConfirm(message, (confirmed) => {
-            resolve(confirmed);
-        });
+        try {
+            // Note: Telegram WebApp doesn't have a direct method to request location
+            // This is a workaround using geolocation API
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                        });
+                    },
+                    () => {
+                        console.warn('Geolocation permission denied');
+                        resolve(null);
+                    }
+                );
+            } else {
+                console.warn('Geolocation is not supported by this browser');
+                resolve(null);
+            }
+        } catch (error) {
+            console.error('Error requesting location:', error);
+            resolve(null);
+        }
     });
 };
 
-// Obtenir le thème Telegram
-export interface TelegramTheme {
-    colorScheme: 'light' | 'dark';
-    backgroundColor: string;
-    secondaryBackgroundColor: string;
-    textColor: string;
-    buttonColor: string;
-    buttonTextColor: string;
-    hintColor: string;
-}
+// Show alert via Telegram interface
+export const showTelegramAlert = (message: string): void => {
+    try {
+        if (telegram) {
+            telegram.showAlert(message);
+        } else {
+            // Fallback to browser alert
+            alert(message);
+        }
+    } catch (error) {
+        console.error('Error showing Telegram alert:', error);
+        alert(message);
+    }
+};
 
+// Show confirmation dialog
+export const showTelegramConfirm = (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+        try {
+            if (telegram) {
+                telegram.showConfirm(message, (confirmed) => {
+                    resolve(confirmed);
+                });
+            } else {
+                // Fallback to browser confirm
+                resolve(window.confirm(message));
+            }
+        } catch (error) {
+            console.error('Error showing Telegram confirmation:', error);
+            resolve(window.confirm(message));
+        }
+    });
+};
+
+// Get Telegram theme
 export const getTelegramTheme = (): TelegramTheme => {
-    if (!isInTelegram()) {
+    try {
+        if (telegram) {
+            const { themeParams, colorScheme } = telegram;
+            
+            return {
+                colorScheme: colorScheme || 'light',
+                backgroundColor: themeParams?.bg_color || '#ffffff',
+                secondaryBackgroundColor: themeParams?.secondary_bg_color || '#f0f0f0',
+                textColor: themeParams?.text_color || '#000000',
+                buttonColor: themeParams?.button_color || '#2481cc',
+                buttonTextColor: themeParams?.button_text_color || '#ffffff',
+                hintColor: themeParams?.hint_color || '#999999',
+            };
+        }
+        
+        // Return default light theme if Telegram is not available
         return {
             colorScheme: 'light',
             backgroundColor: '#ffffff',
-            secondaryBackgroundColor: '#f5f5f5',
-            textColor: '#222222',
-            buttonColor: '#2AABEE',
+            secondaryBackgroundColor: '#f0f0f0',
+            textColor: '#000000',
+            buttonColor: '#2481cc',
             buttonTextColor: '#ffffff',
-            hintColor: '#999999'
+            hintColor: '#999999',
+        };
+    } catch (error) {
+        console.error('Error getting Telegram theme:', error);
+        // Return default light theme
+        return {
+            colorScheme: 'light',
+            backgroundColor: '#ffffff',
+            secondaryBackgroundColor: '#f0f0f0',
+            textColor: '#000000',
+            buttonColor: '#2481cc',
+            buttonTextColor: '#ffffff',
+            hintColor: '#999999',
         };
     }
-
-    return {
-        colorScheme: window.Telegram.WebApp.colorScheme || 'light',
-        backgroundColor: window.Telegram.WebApp.backgroundColor || '#ffffff',
-        secondaryBackgroundColor: window.Telegram.WebApp.secondaryBackgroundColor || '#f5f5f5',
-        textColor: window.Telegram.WebApp.textColor || '#222222',
-        buttonColor: window.Telegram.WebApp.buttonColor || '#2AABEE',
-        buttonTextColor: window.Telegram.WebApp.buttonTextColor || '#ffffff',
-        hintColor: window.Telegram.WebApp.hintColor || '#999999'
-    };
 };
 
-// Export de l'objet Telegram WebApp pour un accès direct
+// Export the Telegram WebApp object for direct access
 export default window.Telegram?.WebApp;

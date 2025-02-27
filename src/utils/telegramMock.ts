@@ -1,4 +1,5 @@
-// src/utils/telegramMock.ts
+import { TelegramEventNames, TelegramEventParams } from '../types/telegram';
+
 export function setupTelegramMock() {
     if (window.Telegram) {
       console.log('Telegram API already available, skipping mock');
@@ -13,8 +14,8 @@ export function setupTelegramMock() {
       isVisible: false,
       isProgressVisible: false,
       text: "CONTINUE",
-      color: "#2AABEE",
-      textColor: "#ffffff",
+      color: "#2AABEE" as `#${string}`,
+      textColor: "#ffffff" as `#${string}`,
       show: function() {
         console.log('MainButton.show() called');
         this.isVisible = true;
@@ -53,9 +54,9 @@ export function setupTelegramMock() {
       },
       setParams: function(params) {
         console.log('MainButton.setParams() called', params);
-        if (params.color) this.color = params.color;
+        if (params.color) this.color = params.color as `#${string}`;
         if (params.text) this.text = params.text;
-        if (params.text_color) this.textColor = params.text_color;
+        if (params.text_color) this.textColor = params.text_color as `#${string}`;
         if (params.is_active !== undefined) this.isActive = params.is_active;
         if (params.is_visible !== undefined) this.isVisible = params.is_visible;
       }
@@ -158,17 +159,17 @@ export function setupTelegramMock() {
         platform: "weba",
         colorScheme: "light",
         themeParams: {
-          bg_color: "#ffffff",
-          secondary_bg_color: "#f0f0f0",
-          text_color: "#222222",
-          hint_color: "#999999",
-          link_color: "#2AABEE",
-          button_color: "#2AABEE",
-          button_text_color: "#ffffff",
+          bg_color: "#ffffff" as `#${string}`,
+          secondary_bg_color: "#f0f0f0" as `#${string}`,
+          text_color: "#222222" as `#${string}`,
+          hint_color: "#999999" as `#${string}`,
+          link_color: "#2AABEE" as `#${string}`,
+          button_color: "#2AABEE" as `#${string}`,
+          button_text_color: "#ffffff" as `#${string}`,
         },
         isClosingConfirmationEnabled: false,
-        headerColor: "#ffffff",
-        backgroundColor: "#ffffff",
+        headerColor: "#ffffff" as `#${string}`,
+        backgroundColor: "#ffffff" as `#${string}`,
         isExpanded: true,
         viewportHeight: window.innerHeight,
         viewportStableHeight: window.innerHeight,
@@ -196,13 +197,23 @@ export function setupTelegramMock() {
         close: function() {
           console.log('Telegram WebApp.close() called');
         },
-        onEvent: function(eventName, callback) {
+        onEvent: function<T extends TelegramEventNames>(
+          eventName: T,
+          callback: (params: TelegramEventParams[T]) => unknown
+        ) {
           console.log('Telegram WebApp.onEvent() called', { eventName });
-          document.addEventListener(`mockTelegram${eventName}`, callback);
+          document.addEventListener(`mockTelegram${eventName}`, ((event: CustomEvent<TelegramEventParams[T]>) => {
+            callback(event.detail);
+          }) as EventListener);
         },
-        offEvent: function(eventName, callback) {
+        offEvent: function<T extends TelegramEventNames>(
+          eventName: T,
+          callback: (params: TelegramEventParams[T]) => unknown
+        ) {
           console.log('Telegram WebApp.offEvent() called', { eventName });
-          document.removeEventListener(`mockTelegram${eventName}`, callback);
+          document.removeEventListener(`mockTelegram${eventName}`, ((event: CustomEvent<TelegramEventParams[T]>) => {
+            callback(event.detail);
+          }) as EventListener);
         },
         sendData: function(data) {
           console.log('Telegram WebApp.sendData() called', { data });
