@@ -21,11 +21,11 @@ export const useTelegram = () => {
     const [initialized, setInitialized] = useState<boolean>(false);
     const [telegramDetected, setTelegramDetected] = useState<boolean>(false);
 
-
     useEffect(() => {
         // Vérifier si Telegram est disponible
         const checkTelegram = () => {
-            const isTelegramAvailable = !!window.Telegram?.WebApp;
+            // Utiliser la fonction isInTelegram pour une détection plus fiable
+            const isTelegramAvailable = isInTelegram();
             console.log('Checking Telegram availability:', isTelegramAvailable);
             setTelegramDetected(isTelegramAvailable);
 
@@ -35,11 +35,17 @@ export const useTelegram = () => {
             }
         };
 
-        // Vérifier immédiatement et après un délai
+        // Vérifier immédiatement et après plusieurs délais
+        // Certains environnements Telegram peuvent prendre du temps à initialiser l'API
         checkTelegram();
-        const timeoutId = setTimeout(checkTelegram, 1000);
+        
+        const timeoutIds = [
+            setTimeout(checkTelegram, 500),
+            setTimeout(checkTelegram, 1000),
+            setTimeout(checkTelegram, 2000)
+        ];
 
-        return () => clearTimeout(timeoutId);
+        return () => timeoutIds.forEach(id => clearTimeout(id));
     }, [initialized]);
 
     return {

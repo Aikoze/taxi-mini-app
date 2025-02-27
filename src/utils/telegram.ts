@@ -10,18 +10,41 @@ export const isInTelegram = (): boolean => {
     // Vérifier le paramètre d'URL pour le dev
     const urlParams = new URLSearchParams(window.location.search);
     const forceTelegram = urlParams.get('telegram') === 'true';
+    
+    // Vérifier si nous sommes dans un iframe (cas typique des mini-apps Telegram)
+    const isInIframe = window !== window.parent;
+    
+    // Vérifier si l'objet Telegram est disponible
+    const hasTelegramObject = !!window.Telegram?.WebApp;
+    
+    // Vérifier si l'URL contient des paramètres spécifiques à Telegram
+    const hasInitData = window.location.hash.includes('tgWebAppData') || 
+                        window.location.search.includes('tgWebAppData');
+    
+    // Log pour le débogage
+    console.log('Telegram detection:', { 
+        isInIframe, 
+        hasTelegramObject, 
+        hasInitData,
+        forceTelegram,
+        isDev: import.meta.env.DEV 
+    });
 
+    // En mode développement, considérer que nous sommes toujours dans Telegram
     if (import.meta.env.DEV) {
         return true;
-      }
-      
+    }
+    
+    // Si le paramètre d'URL est présent, forcer le mode Telegram
     if (forceTelegram) {
         console.log('Mode Telegram forcé par paramètre URL');
         return true;
     }
 
-    return !!window.Telegram?.WebApp;
+    // En production, vérifier plusieurs conditions
+    return hasTelegramObject || hasInitData || isInIframe;
 };
+
 // Initialise l'application et configure les paramètres requis par Telegram
 export const initTelegramApp = (): boolean => {
     if (!isInTelegram()) {
