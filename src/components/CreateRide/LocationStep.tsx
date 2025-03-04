@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import { IoSearch, IoLocationOutline } from 'react-icons/io5';
+import { MapPin, Bookmark, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRides } from '../../contexts/RidesContext';
 import { useTelegram } from '../../hooks/useTelegram';
 import { SavedLocation } from '../../types/app';
+import GoogleMapsAutocomplete from '../common/GoogleMapsAutocomplete';
 
 interface LocationStepProps {
   title: string;
@@ -34,35 +35,36 @@ const LocationStep: React.FC<LocationStepProps> = ({
   onNext,
   onBack
 }) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>(selectedLocation.address || '');
   const [filteredLocations, setFilteredLocations] = useState<SavedLocation[]>([]);
   const { savedLocations, fetchSavedLocations } = useRides();
   const { requestLocation } = useTelegram();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+  const [showSavedLocations, setShowSavedLocations] = useState<boolean>(false);
+
   useEffect(() => {
     // Charger les emplacements médicaux au montage du composant
     const loadLocations = async () => {
-      await fetchSavedLocations('medical');
+      try {
+        await fetchSavedLocations('medical');
+      } catch (error) {
+        console.error('Erreur lors du chargement des locations:', error);
+      }
     };
-    
+
     loadLocations();
-  }, [fetchSavedLocations]);
-  
+  }, []);
+
   useEffect(() => {
     // Filtrer les emplacements en fonction du terme de recherche
-    if (searchTerm.trim() === '') {
-      setFilteredLocations(savedLocations);
-    } else {
-      const filtered = savedLocations.filter(location => 
-        location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        location.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        location.address.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredLocations(filtered);
-    }
+    const filtered = savedLocations.filter(location =>
+      location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      location.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      location.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredLocations(filtered);
   }, [searchTerm, savedLocations]);
-  
+
   const handleLocationSelect = (location: SavedLocation) => {
     onSelectLocation({
       id: location.id,
@@ -71,20 +73,20 @@ const LocationStep: React.FC<LocationStepProps> = ({
       longitude: location.longitude
     });
   };
-  
-  const handleManualInput = () => {
-    if (searchTerm.trim().length > 5) {
+
+  const handleManualInput = (address: string) => {
+    if (address.trim().length > 5) {
       onSelectLocation({
-        address: searchTerm
+        address: address.trim()
       });
     }
   };
-  
+
   const handleShareLocation = async () => {
     try {
       setIsLoading(true);
       const location = await requestLocation();
-      
+
       if (location) {
         onSelectLocation({
           address: `${location.latitude}, ${location.longitude}`,
@@ -98,67 +100,114 @@ const LocationStep: React.FC<LocationStepProps> = ({
       setIsLoading(false);
     }
   };
-  
+
+  // Handle location selection from Google Maps autocomplete
+  const handleGoogleLocationSelect = (location: {
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    country?: string;
+    isSaved?: boolean;
+    savedLocationId?: number;
+  }) => {
+    // Si c'est une adresse enregistrée, utiliser son ID et passer à l'étape suivante
+    if (location.isSaved && location.savedLocationId) {
+      onSelectLocation({
+        id: location.savedLocationId,
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+      setSearchTerm(location.address);
+
+      // Passer automatiquement à l'étape suivante après un court délai
+      setTimeout(() => {
+        onNext();
+      }, 300);
+      return;
+    }
+
+    // Vérifier si l'emplacement est en France
+    if (location.country === 'FR' || !location.country) {
+      onSelectLocation({
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+      setSearchTerm(location.address);
+    } else {
+      // Afficher un message d'erreur si l'emplacement n'est pas en France
+      console.warn('Location not in France:', location.address);
+      // On accepte quand même l'adresse, mais on pourrait ajouter un message d'avertissement
+      onSelectLocation({
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+      setSearchTerm(location.address);
+    }
+  };
+
   return (
     <Card>
       <h2 className="text-xl font-semibold mb-4">{title}</h2>
-      
-      <div className="relative mb-4">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <IoSearch className="text-gray-400" />
-        </div>
-        <input
-          type="text"
-          className="input pl-10"
-          placeholder="Rechercher un lieu..."
+      <p className="text-sm text-gray-500 mb-4">
+        {isPickup
+          ? "Entrez l'adresse de départ"
+          : "Entrez l'adresse d'arrivée"}
+      </p>
+
+      <div className="mb-4">
+        <GoogleMapsAutocomplete
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={setSearchTerm}
+          onSelectLocation={handleGoogleLocationSelect}
+          placeholder={isPickup ? "Adresse de départ" : "Adresse d'arrivée"}
+          required={true}
+          savedLocations={savedLocations}
         />
       </div>
-      
-      {filteredLocations.length > 0 ? (
-        <div className="mb-4 max-h-60 overflow-y-auto rounded-lg border border-gray-200">
-          {filteredLocations.map((location) => (
-            <button
-              key={location.id}
-              className="w-full text-left p-3 border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
-              onClick={() => handleLocationSelect(location)}
-            >
-              <div className="font-medium">{location.short_name}</div>
-              <div className="text-sm text-gray-500">{location.address}</div>
-            </button>
-          ))}
-        </div>
-      ) : searchTerm.length > 0 ? (
-        <div className="mb-4 p-4 text-center text-gray-500 border border-gray-200 rounded-lg">
-          <p>Aucun lieu trouvé. Vous pouvez saisir une adresse personnalisée.</p>
-          <Button 
-            className="mt-2" 
+
+      {/* Saved locations section with toggle */}
+      <div className="mb-4">
+        {showSavedLocations && (
+          <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-gray-200">
+            {filteredLocations.length > 0 ? (
+              filteredLocations.map((location) => (
+                <button
+                  key={location.id}
+                  className="w-full text-left p-3 border-b border-gray-100 hover:bg-gray-50 last:border-b-0"
+                  onClick={() => handleLocationSelect(location)}
+                >
+                  <div className="font-medium">{location.short_name}</div>
+                  <div className="text-sm text-gray-500">{location.address}</div>
+                </button>
+              ))
+            ) : (
+              <div className="p-4 text-center text-gray-500">
+                <p>Aucun lieu enregistré trouvé</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Manual address entry section */}
+      {searchTerm.length > 5 && !selectedLocation.address && (
+        <div className="mb-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+          <p className="text-sm text-gray-600 mb-2">Vous pouvez utiliser cette adresse :</p>
+          <Button
             variant="secondary"
-            onClick={handleManualInput}
+            fullWidth
+            onClick={() => handleManualInput(searchTerm)}
           >
-            Utiliser "{searchTerm}"
+            Utiliser "{searchTerm.length > 30 ? searchTerm.substring(0, 30) + '...' : searchTerm}"
           </Button>
         </div>
-      ) : (
-        <div className="mb-4 p-4 text-center text-gray-500 border border-gray-200 rounded-lg">
-          <p>Veuillez rechercher un lieu ou choisir parmi les options ci-dessous.</p>
-        </div>
       )}
-      
-      {isPickup && (
-        <Button
-          variant="secondary"
-          icon={<IoLocationOutline />}
-          fullWidth
-          className="mb-4"
-          onClick={handleShareLocation}
-          isLoading={isLoading}
-        >
-          Partager ma position
-        </Button>
-      )}
-      
+
+
+
       <div className="flex gap-3">
         <Button
           variant="secondary"

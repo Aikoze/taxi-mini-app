@@ -34,7 +34,7 @@ export interface User {
     pickup_lng: number | null;
     dropoff_address: string;
     client_phone: string;
-    payment_method: 'commission' | 'direct';
+    payment_method: '100%' | '55%' | 'direct';
     status: 'pending' | 'assigned' | 'completed' | 'cancelled';
     assigned_to: string | null;
     current_group_id: string | null;
@@ -74,7 +74,7 @@ export interface User {
       longitude?: number;
     };
     clientPhone: string;
-    paymentMethod: 'commission' | 'direct';
+    paymentMethod: '100%' | '55%' | 'direct';
   }
   
   // Types de réponses API

@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { User } from '../types/app';
 import { TelegramUser } from '../types/telegram';
 import { useTelegram } from '../hooks/useTelegram';
@@ -8,6 +8,7 @@ import { authService } from '../api/authService';
 interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
+    isRegistered: boolean;
     user: User | null;
     telegramUser: TelegramUser | null;
     login: () => Promise<void>;
@@ -23,43 +24,29 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isRegistered, setIsRegistered] = useState<boolean>(false);
     const [user, setUser] = useState<User | null>(null);
     const { user: telegramUser, initData, inTelegram } = useTelegram();
 
-    useEffect(() => {
-        if (inTelegram && telegramUser) {
-            // Vérifier si nous avons des données d'initialisation ou si nous sommes dans un iframe
-            if (initData || window !== window.parent) {
-                login();
-            } else {
-                setIsLoading(false);
-            }
-        } else {
-            setIsLoading(false);
-        }
-    }, [inTelegram, telegramUser, initData]);
-
     const login = async (): Promise<void> => {
         try {
+            console.log('Tentative de login avec l\'utilisateur Telegram:', telegramUser);
             setIsLoading(true);
-
-            // Si nous n'avons pas de données d'initialisation mais que nous sommes dans un iframe,
-            // créer des données fictives pour permettre à l'application de fonctionner
-            const dataToUse = initData || (window !== window.parent ? 'iframe-fallback-data' : null);
-
-            if (!dataToUse) {
-                throw new Error('Données d\'initialisation Telegram manquantes');
-            }
 
             try {
                 // Essayer d'authentifier avec le backend
-                const response = await authService.validateAuth(dataToUse);
+                const response = await authService.validateAuth(telegramUser);
+                console.log('Réponse de validateAuth:', response);
 
                 if (response.isRegistered && response.user) {
                     setUser(response.user);
                     setIsAuthenticated(true);
+                    setIsRegistered(true);
+                    console.log('Utilisateur déjà enregistré:', response.user);
                 } else {
                     setIsAuthenticated(false);
+                    setIsRegistered(false);
+                    console.log('Utilisateur non enregistré, inscription requise');
                 }
             } catch (error) {
                 console.error('Erreur lors de la validation avec le backend:', error);
@@ -69,6 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (!import.meta.env.DEV && window !== window.parent) {
                     console.log('Utilisation du mode de secours pour l\'authentification');
                     setIsAuthenticated(false);
+                    setIsRegistered(false);
                 } else {
                     throw error;
                 }
@@ -78,29 +66,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
             console.error('Erreur d\'authentification:', error);
             setIsAuthenticated(false);
+            setIsRegistered(false);
             setIsLoading(false);
         }
     };
+
+    // Dans AuthContext.tsx
+    useEffect(() => {
+        // Utiliser une référence pour suivre si l'effet a déjà été exécuté
+
+        const initAuth = async () => {
+            if (inTelegram && telegramUser) {
+                console.log('Utilisateur Telegram disponible', telegramUser);
+
+                // Ajouter un log pour mieux comprendre l'état
+                console.log('État d\'authentification:', { isAuthenticated, user });
+
+                if (telegramUser || window !== window.parent) {
+                    if (!isAuthenticated && !user) {
+                        await login();
+                    }
+                } else {
+                    setIsLoading(false);
+                }
+            } else {
+                console.log('Telegram non disponible:', { inTelegram, telegramUser });
+                setIsLoading(false);
+            }
+        };
+
+        initAuth();
+
+    }, [inTelegram, telegramUser, isAuthenticated, user]);
 
     const registerUser = async (phoneNumber: string, email: string, address: string): Promise<User> => {
         try {
             // Si nous n'avons pas d'utilisateur Telegram mais que nous sommes dans un iframe,
             // créer un utilisateur Telegram fictif pour permettre l'inscription
-            const userToUse = telegramUser || (import.meta.env.DEV ? {
-                id: Date.now(), // Utiliser un ID basé sur le timestamp
-                first_name: "Utilisateur",
-                last_name: "Telegram",
-                username: `user_${Date.now()}`,
-                language_code: "fr",
-                is_premium: false
-            } : null);
-
-            if (!userToUse) {
+            if (!telegramUser) {
                 throw new Error('Utilisateur Telegram non disponible');
             }
 
             const response = await authService.registerUser({
-                telegramUser: userToUse,
+                telegramUser,
                 phone: phoneNumber,
                 email,
                 address
@@ -109,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (response.success && response.data) {
                 setUser(response.data);
                 setIsAuthenticated(true);
+                setIsRegistered(true);
                 return response.data;
             } else {
                 throw new Error(response.message || 'Erreur lors de l\'inscription');
@@ -124,6 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             value={{
                 isLoading,
                 isAuthenticated,
+                isRegistered,
                 user,
                 telegramUser,
                 login,

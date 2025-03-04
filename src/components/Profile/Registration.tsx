@@ -21,20 +21,20 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
     email?: string;
     address?: string;
   }>({});
+  const [isCheckingUser, setIsCheckingUser] = useState<boolean>(false);
 
-  const { registerUser, telegramUser } = useAuth();
+  const { registerUser, telegramUser, isRegistered, isLoading: authLoading } = useAuth();
   const telegram = useTelegram();
   const { MainButton } = telegram;
 
-  // Log l'état du SDK Telegram au chargement
+  console.log(registerUser)
+  // Rediriger si l'utilisateur est déjà enregistré
   useEffect(() => {
-    console.log('Telegram SDK state:', {
-      WebApp,
-      MainButtonFromSDK: WebApp?.MainButton,
-      MainButtonFromHook: MainButton,
-      telegramObject: telegram
-    });
-  }, []);
+    if (isRegistered) {
+      console.log('Utilisateur déjà enregistré, redirection depuis Registration.tsx');
+      onSuccess();
+    }
+  }, [isRegistered, onSuccess]);
 
   // Configurer le bouton principal de Telegram
   useEffect(() => {
@@ -61,7 +61,6 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
   // Mettre à jour l'état du bouton principal en fonction de la validité du formulaire
   useEffect(() => {
     const formValid = isFormValid();
-
 
     if (MainButton) {
       if (formValid && !isLoading) {
@@ -110,77 +109,47 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
   const validateAddress = (value: string) => {
     if (!value.trim()) {
       return 'L\'adresse est requise';
-    } else if (value.trim().length < 5) {
-      return 'L\'adresse est trop courte';
     }
     return undefined;
   };
 
-  // Gérer les changements de champ avec validation
+  // Gérer les changements de numéro de téléphone
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setPhoneNumber(value);
 
     const error = validatePhoneNumber(value);
-
-    setValidationErrors(prev => {
-      const newErrors = {
-        ...prev,
-        phone: error
-      };
-
-      // Si error est undefined, supprimez la clé phone des erreurs
-      if (!error) {
-        delete newErrors.phone;
-      }
-
-      console.log('Updated validation errors after phone change:', newErrors);
-      return newErrors;
-    });
+    setValidationErrors(prev => ({
+      ...prev,
+      phone: error
+    }));
   };
 
+  // Gérer les changements d'email
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
 
     const error = validateEmail(value);
-
-    setValidationErrors(prev => {
-      const newErrors = {
-        ...prev,
-        email: error
-      };
-
-      // Si error est undefined, supprimez la clé email des erreurs
-      if (!error) {
-        delete newErrors.email;
-      }
-
-      return newErrors;
-    });
+    setValidationErrors(prev => ({
+      ...prev,
+      email: error
+    }));
   };
 
+  // Gérer les changements d'adresse
   const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setAddress(value);
 
     const error = validateAddress(value);
-
-    setValidationErrors(prev => {
-      const newErrors = {
-        ...prev,
-        address: error
-      };
-
-      // Si error est undefined, supprimez la clé address des erreurs
-      if (!error) {
-        delete newErrors.address;
-      }
-
-      return newErrors;
-    });
+    setValidationErrors(prev => ({
+      ...prev,
+      address: error
+    }));
   };
 
+  // Gérer la soumission du formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -213,12 +182,12 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
       await registerUser(phoneNumber, email, address);
 
       setSuccessMessage('Inscription réussie !');
-      
+
       // Notifier Telegram que l'opération est terminée
       if (WebApp && WebApp.close) {
         WebApp.close();
       }
-      
+
       // Ne pas rediriger automatiquement
       // La redirection se fera uniquement lorsque l'utilisateur clique sur un bouton
       if (MainButton) {
@@ -228,7 +197,7 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
           onSuccess();
         });
       }
-      
+
     } catch (error) {
       setError('Erreur lors de l\'inscription. Veuillez réessayer.');
       console.error('Error during registration:', error);
@@ -242,107 +211,94 @@ const Registration: React.FC<RegistrationProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4">Inscription</h2>
-
-      {telegramUser && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-gray-600">
-            Vous vous inscrivez en tant que <strong>{telegramUser.first_name} {telegramUser.last_name}</strong>
-          </p>
-        </div>
-      )}
-
+    <div className="bg-white rounded-lg shadow-md p-6">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
           {successMessage}
-          <div className="mt-3">
-            <Button
-              variant="primary"
-              onClick={onSuccess}
-              fullWidth
-            >
-              Continuer vers mon profil
-            </Button>
-          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phone">
-            Numéro de téléphone
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            className={`input ${validationErrors.phone ? 'border-red-500' : ''}`}
-            placeholder="+33 6 12 34 56 78"
-            value={phoneNumber}
-            onChange={handlePhoneChange}
-            disabled={isLoading}
-            required
-          />
-          {validationErrors.phone && (
-            <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
-          )}
+      {(isCheckingUser) ? (
+        <div className="text-center p-6">
+          <p className="text-gray-600">Vérification de votre compte...</p>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="phone">
+              Numéro de téléphone
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              className={`input ${validationErrors.phone ? 'border-red-500' : ''}`}
+              placeholder="+33 6 12 34 56 78"
+              value={phoneNumber}
+              onChange={handlePhoneChange}
+              disabled={isLoading}
+              required
+            />
+            {validationErrors.phone && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
+            )}
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            className={`input ${validationErrors.email ? 'border-red-500' : ''}`}
-            placeholder="exemple@domain.com"
-            value={email}
-            onChange={handleEmailChange}
-            disabled={isLoading}
-            required
-          />
-          {validationErrors.email && (
-            <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
-          )}
-        </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className={`input ${validationErrors.email ? 'border-red-500' : ''}`}
+              placeholder="exemple@domain.com"
+              value={email}
+              onChange={handleEmailChange}
+              disabled={isLoading}
+              required
+            />
+            {validationErrors.email && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+            )}
+          </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="address">
-            Adresse
-          </label>
-          <textarea
-            id="address"
-            className={`input ${validationErrors.address ? 'border-red-500' : ''}`}
-            placeholder="Votre adresse complète"
-            value={address}
-            onChange={handleAddressChange}
-            rows={3}
-            disabled={isLoading}
-            required
-          />
-          {validationErrors.address && (
-            <p className="text-red-500 text-xs mt-1">{validationErrors.address}</p>
-          )}
-        </div>
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="address">
+              Adresse
+            </label>
+            <textarea
+              id="address"
+              className={`input ${validationErrors.address ? 'border-red-500' : ''}`}
+              placeholder="Votre adresse complète"
+              value={address}
+              onChange={handleAddressChange}
+              rows={3}
+              disabled={isLoading}
+              required
+            />
+            {validationErrors.address && (
+              <p className="text-red-500 text-xs mt-1">{validationErrors.address}</p>
+            )}
+          </div>
 
-        <Button
-          id="registration-submit"
-          type="submit"
-          variant="primary"
-          isLoading={isLoading}
-          fullWidth
-          disabled={!isFormValid() || isLoading}
-        >
-          S'inscrire
-        </Button>
-      </form>
+          <Button
+            id="registration-submit"
+            type="submit"
+            variant="primary"
+            isLoading={isLoading}
+            fullWidth
+            disabled={!isFormValid() || isLoading}
+          >
+            S'inscrire
+          </Button>
+        </form>
+      )}
     </div>
   );
 };

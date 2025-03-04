@@ -20,59 +20,16 @@ interface RegisterParams {
  * Service pour gérer l'authentification
  */
 export const authService = {
-  /**
-   * Valide les données d'authentification Telegram
-   */
-  validateAuth: async (telegramInitData: string): Promise<AuthResponse> => {
-    // Si nous sommes en développement et que les données sont fictives,
-    // simuler une réponse pour permettre le développement sans backend
-    if (import.meta.env.DEV && telegramInitData === 'iframe-fallback-data') {
-      console.log('Mode développement: Utilisation de données d\'authentification simulées');
-      return {
-        isRegistered: false,
-        user: null,
-        telegramUser: {
-          id: Date.now(),
-          first_name: "Utilisateur",
-          last_name: "Test",
-          username: `dev_user_${Date.now()}`,
-          language_code: "fr",
-          is_premium: false
-        }
-      };
-    }
-    
-    return apiService.post<AuthResponse>('/api/auth/validate', { telegramInitData });
+
+  validateAuth: async (telegramUser: TelegramUser): Promise<AuthResponse> => {
+    console.log('Envoi de la demande de validation avec ID:', telegramUser.id);
+    return apiService.post<AuthResponse>('/api/auth/validate', { id: telegramUser.id });
   },
-  
+
   /**
    * Enregistre un nouvel utilisateur
    */
   registerUser: async (params: RegisterParams): Promise<ApiResponse<User>> => {
-    // Si nous sommes en développement et que l'utilisateur a un ID basé sur timestamp (fictif),
-    // simuler une réponse pour permettre le développement sans backend
-    if (import.meta.env.DEV && typeof params.telegramUser.id === 'number' && 
-        params.telegramUser.id > 1000000000000) { // Vérifier si c'est un timestamp récent
-      console.log('Mode développement: Simulation d\'enregistrement utilisateur');
-      const user: User = {
-        id: params.telegramUser.id.toString(),
-        telegram_id: params.telegramUser.id,
-        first_name: params.telegramUser.first_name,
-        last_name: params.telegramUser.last_name,
-        username: params.telegramUser.username || '',
-        phone_number: params.phone,
-        email: params.email,
-        address: params.address,
-        created_at: new Date().toISOString()
-      };
-      
-      return {
-        success: true,
-        data: user,
-        message: 'Utilisateur enregistré avec succès (mode développement)'
-      };
-    }
-    
     return apiService.post<ApiResponse<User>>('/api/users', params);
   }
 };

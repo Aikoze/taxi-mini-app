@@ -26,7 +26,6 @@ export const useTelegram = () => {
         const checkTelegram = () => {
             // Use isInTelegram function for more reliable detection
             const isTelegramAvailable = isInTelegram();
-            console.log('Checking Telegram availability:', isTelegramAvailable);
             setTelegramDetected(isTelegramAvailable);
 
             if (isTelegramAvailable && !initialized) {

@@ -20,14 +20,6 @@ export const isInTelegram = (): boolean => {
     const hasInitData = window.location.hash.includes('tgWebAppData') || 
                         window.location.search.includes('tgWebAppData');
     
-    // Log for debugging
-    console.log('Telegram detection:', { 
-        isInIframe, 
-        hasTelegramObject, 
-        hasInitData,
-        forceTelegram,
-        isDev: import.meta.env.DEV 
-    });
     
     // In development mode, consider we're in Telegram if forced via URL
     if (import.meta.env.DEV && forceTelegram) {

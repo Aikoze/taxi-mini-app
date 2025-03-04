@@ -2,9 +2,9 @@
 
 /* Si vous utilisez Tailwind v4 */
 @theme {
-  --color-telegram-primary: #2AABEE;
-  --color-telegram-secondary: #229ED9;
-  --color-telegram-light: #C5E6F8;
+  --color-telegram-primary: #185b6a;
+  --color-telegram-secondary: #36aba4;
+  --color-telegram-light: #e6f5fc;
   --color-telegram-dark: #1E7FA8;
 }
 

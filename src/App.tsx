@@ -9,8 +9,10 @@ import CreateRidePage from './pages/CreateRidePage';
 import TakeRidePage from './pages/TakeRidePage';
 import ProfilePage from './pages/ProfilePage';
 import MyRidesPage from './pages/MyRidesPages';
+import RideDetailPage from './pages/RideDetailPage';
 import TelegramDebugPanel from './components/common/TelegramDebugPanel';
 import WebApp from '@twa-dev/sdk';
+import { Toaster } from 'sonner'
 
 // Route protégée qui nécessite une authentification
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -61,6 +63,14 @@ const AppRoutes: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/ride/:id"
+          element={
+            <ProtectedRoute>
+              <RideDetailPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </RidesProvider>
@@ -83,6 +93,7 @@ const App: React.FC = () => {
 
   return (
     <div className="App max-w-md mx-auto h-screen">
+      <Toaster closeButton={true} duration={300} />
       <Router>
         <AuthProvider>
           <AppRoutes />
@@ -101,7 +112,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* {import.meta.env.DEV && <TelegramDebugPanel />} */}
     </div>
   );
 };

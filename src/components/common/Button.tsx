@@ -25,8 +25,8 @@ const Button: React.FC<ButtonProps> = ({
     const variantClasses = {
         primary: "bg-telegram-primary text-white hover:bg-telegram-dark",
         secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300",
-        outline: "border border-telegram-primary text-telegram-primary hover:bg-telegram-light",
-        text: "text-telegram-primary hover:bg-telegram-light"
+        outline: "border border-telegram-primary text-telegram-primary",
+        text: "text-telegram-primary "
     };
 
     const sizeClasses = {

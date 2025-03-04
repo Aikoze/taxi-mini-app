@@ -22,14 +22,6 @@ export const isInTelegram = (): boolean => {
   // Check if the Telegram WebApp object is available
   const hasTelegramWebApp = Boolean(WebApp);
 
-  // Log for debugging
-  console.log('Telegram detection:', {
-    isInIframe,
-    hasTelegramWebApp,
-    WebApp,
-    isDev: import.meta.env.DEV
-  });
-
   return hasTelegramWebApp || isInIframe;
 };
 
@@ -54,11 +46,23 @@ export const getTelegramUser = () => {
     const user = WebApp.initDataUnsafe.user;
 
     if (!user && import.meta.env.DEV) {
+
+      // if port = 5174, return a mock user
+      if (window.location.port === '5174') {
+        return {
+          id: 893826723, // <- ID TELEGRAM
+          first_name: "Youenn",
+          last_name: "Toullec",
+          username: `Youenn`,
+          language_code: "fr",
+          is_premium: false
+        };
+      }
       return {
-        id: Date.now(),
-        first_name: "Dev",
-        last_name: "User",
-        username: `dev_${Date.now()}`,
+        id: 1996239302, // <- ID TELEGRAM
+        first_name: "Youenn",
+        last_name: "Toullec",
+        username: `Youenn`,
         language_code: "fr",
         is_premium: false
       };
@@ -66,8 +70,6 @@ export const getTelegramUser = () => {
 
     return user;
   } catch (error) {
-    console.error('Error getting Telegram user:', error);
-
     // En mode développement, retourner un utilisateur fictif en cas d'erreur
     if (import.meta.env.DEV) {
       console.log('Providing mock user after error in development mode');

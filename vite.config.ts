@@ -9,15 +9,23 @@ export default defineConfig({
     host: true, // Écoute sur toutes les adresses réseau, y compris LAN et public
     port: 5173,
     strictPort: true, // Échoue si le port est déjà utilisé
-    hmr: {
-      // Options pour Hot Module Replacement
-      clientPort: 443 // Force le port client HMR à 443 pour les tunnels HTTPS
-    },
-    allowedHosts: [
-      'localhost',
-      '127.0.0.1',
-      'taxi-mini-app.loca.lt',
-      '.loca.lt' // Autorise tous les sous-domaines loca.lt
-    ]
+    proxy: {
+      // Configuration du proxy en développement
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+    // hmr: {
+    //   // Options pour Hot Module Replacement
+    //   clientPort: 443 // Force le port client HMR à 443 pour les tunnels HTTPS
+    // },
+    // allowedHosts: [
+    //   'localhost',
+    //   '127.0.0.1',
+    //   'taxi-mini-app.loca.lt',
+    //   '.loca.lt' // Autorise tous les sous-domaines loca.lt
+    // ]
   }
 })

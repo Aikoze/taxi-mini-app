@@ -1,8 +1,9 @@
 // src/components/CreateRide/DateTimeStep.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import dayjs from 'dayjs';
+import { Calendar, Clock, AlertTriangle } from 'lucide-react';
 
 interface DateTimeStepProps {
     isImmediate: boolean;
@@ -23,6 +24,18 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     onNext,
     onBack
 }) => {
+    const [customDate, setCustomDate] = useState<string>(date);
+    const [customTime, setCustomTime] = useState<string>(time);
+    const [dateError, setDateError] = useState<string>('');
+    const [timeError, setTimeError] = useState<string>('');
+    const [showSuggestions, setShowSuggestions] = useState<boolean>(true);
+
+    // Validate date and time on component mount or when they change
+    useEffect(() => {
+        if (customDate) validateDate(customDate);
+        if (customTime) validateTime(customTime);
+    }, []);
+
     // Générer des heures suggérées (toutes les 15 minutes pour les 2 prochaines heures)
     const generateTimeOptions = () => {
         const options = [];
@@ -66,6 +79,80 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         return options;
     };
 
+    // Validate date format and ensure it's not in the past
+    const validateDate = (value: string): boolean => {
+        // Clear previous error
+        setDateError('');
+
+        // Check if date is in valid format (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(value)) {
+            setDateError('Format de date invalide. Utilisez le format AAAA-MM-JJ');
+            return false;
+        }
+
+        // Check if date is valid
+        const selectedDate = dayjs(value);
+        if (!selectedDate.isValid()) {
+            setDateError('Date invalide');
+            return false;
+        }
+
+        // Check if date is not in the past
+        const today = dayjs().startOf('day');
+        if (selectedDate.isBefore(today)) {
+            setDateError('La date ne peut pas être dans le passé');
+            return false;
+        }
+
+        // Valid date, update parent component
+        onDateChange(value);
+        return true;
+    };
+
+    // Validate time format and ensure it's not in the past if date is today
+    const validateTime = (value: string): boolean => {
+        // Clear previous error
+        setTimeError('');
+
+        // Check if time is in valid format (HH:MM)
+        const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        if (!timeRegex.test(value)) {
+            setTimeError('Format d\'heure invalide. Utilisez le format HH:MM');
+            return false;
+        }
+
+        // If date is today, check if time is not in the past
+        if (date && dayjs(date).isSame(dayjs(), 'day')) {
+            const now = dayjs();
+            const [hours, minutes] = value.split(':').map(Number);
+            const selectedTime = dayjs().hour(hours).minute(minutes);
+
+            if (selectedTime.isBefore(now)) {
+                setTimeError('L\'heure ne peut pas être dans le passé');
+                return false;
+            }
+        }
+
+        // Valid time, update parent component
+        onTimeChange(value);
+        return true;
+    };
+
+    // Handle custom date input
+    const handleDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setCustomDate(value);
+        if (value) validateDate(value);
+    };
+
+    // Handle custom time input
+    const handleTimeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setCustomTime(value);
+        if (value) validateTime(value);
+    };
+
     const timeOptions = generateTimeOptions();
     const dateOptions = generateDateOptions();
 
@@ -80,20 +167,24 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Date
                     </label>
-                    <div className="grid grid-cols-1 gap-2">
-                        {dateOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                className={`p-3 text-left rounded-lg border ${date === option.value
-                                        ? 'border-telegram-primary bg-telegram-light'
-                                        : 'border-gray-200 hover:bg-gray-50'
-                                    }`}
-                                onClick={() => onDateChange(option.value)}
-                            >
-                                <span className="font-medium">{option.label}</span>
-                            </button>
-                        ))}
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Calendar className="text-gray-400" />
+                        </div>
+                        <input
+                            type="date"
+                            className={`input pl-10 ${dateError ? 'border-red-500' : ''}`}
+                            value={customDate}
+                            onChange={handleDateInput}
+                            placeholder="AAAA-MM-JJ"
+                            min={dayjs().format('YYYY-MM-DD')}
+                        />
                     </div>
+                    {dateError && (
+                        <p className="mt-1 text-sm text-red-500 flex items-center">
+                            <AlertTriangle className="mr-1" /> {dateError}
+                        </p>
+                    )}
                 </div>
             )}
 
@@ -101,22 +192,24 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     Heure
                 </label>
-                <div className="grid grid-cols-4 gap-2">
-                    {timeOptions.map((timeOption) => (
-                        <button
-                            key={timeOption}
-                            className={`py-2 px-3 rounded-lg border ${time === timeOption
-                                    ? 'border-telegram-primary bg-telegram-light'
-                                    : 'border-gray-200 hover:bg-gray-50'
-                                }`}
-                            onClick={() => onTimeChange(timeOption)}
-                        >
-                            {timeOption}
-                        </button>
-                    ))}
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Clock className="text-gray-400" />
+                    </div>
+                    <input
+                        type="time"
+                        className={`input pl-10 ${timeError ? 'border-red-500' : ''}`}
+                        value={customTime}
+                        onChange={handleTimeInput}
+                        step="300" // 5 minutes steps
+                    />
                 </div>
+                {timeError && (
+                    <p className="mt-1 text-sm text-red-500 flex items-center">
+                        <AlertTriangle className="mr-1" /> {timeError}
+                    </p>
+                )}
             </div>
-
             <div className="flex gap-3">
                 <Button
                     variant="secondary"
@@ -127,8 +220,23 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 <Button
                     variant="primary"
                     fullWidth
-                    onClick={onNext}
-                    disabled={!time || (!isImmediate && !date)}
+                    onClick={() => {
+                        // Validate inputs before proceeding
+                        let isValid = true;
+
+                        if (!isImmediate && customDate) {
+                            isValid = validateDate(customDate) && isValid;
+                        }
+
+                        if (customTime) {
+                            isValid = validateTime(customTime) && isValid;
+                        }
+
+                        if (isValid) {
+                            onNext();
+                        }
+                    }}
+                    disabled={!time || (!isImmediate && !date) || !!timeError || !!dateError}
                 >
                     Continuer
                 </Button>
