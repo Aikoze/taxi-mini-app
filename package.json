@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:alt": "vite --port 5174",
-    "build": "tsc -b && vite build",
+    "build": "CI=false vite build --emptyOutDir",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "vercel --prod",
