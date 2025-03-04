@@ -11,11 +11,24 @@ import statsServiceFactory from '../server/statsService.js';
 
 // Configuration
 dotenv.config({ path: './server/.env' });
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+// Utiliser les variables backend ou frontend comme fallback
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.VITE_TELEGRAM_BOT;
+
+console.log('Variables d\'environnement dans API:');
+console.log('SUPABASE_URL:', SUPABASE_URL ? 'défini' : 'non défini');
+console.log('SUPABASE_KEY:', SUPABASE_KEY ? 'défini' : 'non défini');
+console.log('TELEGRAM_BOT_TOKEN:', TELEGRAM_BOT_TOKEN ? 'défini' : 'non défini');
 
 // Initialisation de Supabase
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+try {
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch (error) {
+  console.error('Erreur lors de l\'initialisation de Supabase:', error.message);
+}
 
 // Initialisation des services
 const statsService = statsServiceFactory(supabase);

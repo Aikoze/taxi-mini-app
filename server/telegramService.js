@@ -8,10 +8,17 @@ dotenv.config({ path: './server/.env' });
 const TELEGRAM_BOT_TOKEN = process.env.VITE_TELEGRAM_BOT || process.env.TELEGRAM_BOT_TOKEN;
 
 // Initialiser le client Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+// Utiliser les variables backend ou frontend comme fallback
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Variables SUPABASE_URL et SUPABASE_KEY manquantes dans l\'environnement');
+  console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+  console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialiser le bot Telegram
 let bot = null;
