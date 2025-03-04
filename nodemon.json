@@ -1,6 +1,11 @@
 {
-  "watch": ["server/"],
+  "watch": [
+    "api/"
+  ],
   "ext": "js,json",
-  "ignore": ["node_modules/", "dist/"],
-  "exec": "node server/index.js"
+  "ignore": [
+    "node_modules/",
+    "dist/"
+  ],
+  "exec": "node api/index.js"
 }

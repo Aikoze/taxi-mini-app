@@ -14,12 +14,15 @@
     "tunnel": "lt --port 5173 --subdomain taxi-mini-app",
     "tunnel:custom": "node start-tunnel.js",
     "dev:tunnel": "concurrently \"npm run dev\" \"npm run tunnel\"",
-    "server": "node server/index.js",
-    "server:dev": "nodemon server/index.js",
-    "server:alt": "PORT=3001 node server/index.js",
-    "server:dev:alt": "PORT=3001 nodemon server/index.js",
+    "server": "node api/index.js",
+    "server:dev": "nodemon api/index.js",
+    "server:alt": "PORT=3001 node api/index.js",
+    "server:dev:alt": "PORT=3001 nodemon api/index.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server:dev\"",
-    "dev:all:alt": "concurrently \"npm run dev:alt\" \"npm run server:dev:alt\""
+    "dev:all:alt": "concurrently \"npm run dev:alt\" \"npm run server:dev:alt\"",
+    "dev:vercel": "node server-local.js",
+    "server:vercel": "USE_VERCEL_API=true nodemon api/index.js",
+    "dev:all:vercel": "concurrently \"npm run dev\" \"npm run server:vercel\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

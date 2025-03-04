@@ -1,38 +1,3 @@
-// server/telegramService.js
-import TelegramBot from 'node-telegram-bot-api';
-import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
-
-// Configuration
-dotenv.config({ path: './server/.env' });
-const TELEGRAM_BOT_TOKEN = process.env.VITE_TELEGRAM_BOT || process.env.TELEGRAM_BOT_TOKEN;
-
-// Initialiser le client Supabase
-// Utiliser les variables backend ou frontend comme fallback
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Variables SUPABASE_URL et SUPABASE_KEY manquantes dans l\'environnement');
-  console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
-  console.log('VITE_SUPABASE_URL:', process.env.VITE_SUPABASE_URL);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Initialiser le bot Telegram
-let bot = null;
-
-try {
-  if (TELEGRAM_BOT_TOKEN) {
-    bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
-    console.log('Bot Telegram initialisé avec succès');
-  } else {
-    console.warn('Token du bot Telegram non défini dans les variables d\'environnement');
-  }
-} catch (error) {
-  console.error('Erreur lors de l\'initialisation du bot Telegram:', error);
-}
 
 /**
  * Service pour gérer les notifications Telegram
@@ -224,7 +189,7 @@ const telegramService = {
 
       // Préparer les informations supplémentaires en fonction du statut
       let additionalInfo = '';
-      
+
       // Pour les courses attribuées, ajouter des informations de reporting
       if (newStatus === 'assigned') {
         // Récupérer les détails d'attribution s'ils existent
@@ -235,14 +200,14 @@ const telegramService = {
             .select('*')
             .eq('ride_id', ride.id)
             .single();
-            
+
           if (!error && data) {
             assignmentDetails = data;
           }
         } catch (err) {
           console.error('Erreur lors de la récupération des détails d\'attribution:', err);
         }
-        
+
         // Informations sur le chauffeur assigné
         let driverInfo = 'Informations non disponibles';
         if (ride.assigned_to) {
@@ -252,7 +217,7 @@ const telegramService = {
               .select('*')
               .eq('telegram_id', ride.assigned_to)
               .single();
-              
+
             if (!error && driver) {
               driverInfo = `${driver.first_name} ${driver.last_name || ''} - ${driver.phone_number || 'Tél non disponible'}`;
             }
@@ -260,33 +225,33 @@ const telegramService = {
             console.error('Erreur lors de la récupération des informations du chauffeur:', err);
           }
         }
-        
+
         // Ajouter les informations du chauffeur
         additionalInfo += `\n<b>Course attribuée à:</b> ${driverInfo}\n`;
-        
+
         // Ajouter des informations de reporting si disponibles
         if (assignmentDetails) {
           try {
             const isProximityBased = assignmentDetails.assignment_type === 'proximity';
             const topDrivers = JSON.parse(assignmentDetails.driver_ranking || '[]');
-            
+
             additionalInfo += `\n<b>Méthode d'attribution:</b> ${isProximityBased ? 'Proximité (chauffeur le plus proche)' : 'Aléatoire'}`;
-            
+
             if (isProximityBased && assignmentDetails.driver_distance) {
               additionalInfo += `\n<b>Distance:</b> ${assignmentDetails.driver_distance.toFixed(2)} km`;
             }
-            
+
             if (topDrivers && topDrivers.length > 0) {
               additionalInfo += `\n\n<b>Top ${Math.min(5, topDrivers.length)} des chauffeurs intéressés:</b>`;
-              
+
               topDrivers.forEach((driver, index) => {
                 const driverName = `${driver.firstName || ''} ${driver.lastName || ''}`.trim() || 'Chauffeur';
                 let infoLine = `\n${index + 1}. ${driverName}`;
-                
+
                 if (isProximityBased && driver.distance) {
                   infoLine += ` - ${driver.distance.toFixed(2)} km`;
                 }
-                
+
                 additionalInfo += infoLine;
               });
             }

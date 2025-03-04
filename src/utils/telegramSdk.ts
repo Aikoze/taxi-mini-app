@@ -6,36 +6,84 @@ export const twaDevWebApp = WebApp;
 
 // Check if the app is running in Telegram environment
 export const isInTelegram = (): boolean => {
+  console.log('%c[telegramSdk] Vérification de l\'environnement Telegram', 'color: blue;');
+  
+  // Vérifier les variables globales
+  const _window = window as any;
+  const hasWindowTelegram = Boolean(_window.Telegram);
+  console.log('[telegramSdk] - window.Telegram:', hasWindowTelegram ? 'présent' : 'absent');
+  
   // Check URL parameters for development mode
   const urlParams = new URLSearchParams(window.location.search);
   const forceTelegram = urlParams.get('telegram') === 'true';
+  console.log('[telegramSdk] - URL avec paramètre telegram=true:', forceTelegram ? 'OUI' : 'NON');
 
   // In development mode, consider we're in Telegram if forced via URL
   if (import.meta.env.DEV && forceTelegram) {
-    console.log('Telegram mode forced via URL parameter in dev mode');
+    console.log('[telegramSdk] Mode Telegram forcé via paramètre URL en mode développement');
     return true;
   }
 
   // Check if we're in an iframe (typical for Telegram mini-apps)
   const isInIframe = window !== window.parent;
+  console.log('[telegramSdk] - Dans un iframe:', isInIframe ? 'OUI' : 'NON');
 
   // Check if the Telegram WebApp object is available
   const hasTelegramWebApp = Boolean(WebApp);
+  console.log('[telegramSdk] - @twa-dev/sdk WebApp:', hasTelegramWebApp ? 'présent' : 'absent');
+  
+  // Tentative de détection supplémentaire par le User-Agent
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isTelegramUserAgent = userAgent.includes('telegram') || userAgent.includes('tgweb');
+  console.log('[telegramSdk] - User-Agent Telegram:', isTelegramUserAgent ? 'DÉTECTÉ' : 'NON');
 
-  return hasTelegramWebApp || isInIframe;
+  // Recherche de pattern spécifique dans l'URL
+  const url = window.location.href.toLowerCase();
+  const hasTelegramPattern = url.includes('tg://') || url.includes('telegram.org') || url.includes('t.me/');
+  console.log('[telegramSdk] - Pattern Telegram dans l\'URL:', hasTelegramPattern ? 'DÉTECTÉ' : 'NON');
+  
+  // Décision finale
+  const result = hasWindowTelegram || hasTelegramWebApp || (isInIframe && (isTelegramUserAgent || hasTelegramPattern));
+  console.log('[telegramSdk] Résultat final de la détection Telegram:', result ? 'DÉTECTÉ' : 'NON DÉTECTÉ');
+  
+  return result;
 };
 
 // Initialize the Telegram WebApp
 export const initTelegramApp = (): void => {
   try {
+    console.log('[telegramSdk] Tentative d\'initialisation du WebApp Telegram');
+    
     if (WebApp) {
-      console.log('Telegram WebApp SDK initialized successfully');
+      // Inspecter les propriétés de l'objet WebApp
+      const webAppProps = Object.keys(WebApp).filter(key => typeof key === 'string');
+      console.log('[telegramSdk] Propriétés de WebApp:', webAppProps);
+      
+      // Vérifier si initData est disponible
+      if (WebApp.initData) {
+        console.log('[telegramSdk] initData est présent (longueur:', WebApp.initData.length, ')');
+      } else {
+        console.warn('[telegramSdk] initData est absent ou vide');
+      }
+      
+      // Vérifier si initDataUnsafe est disponible
+      if (WebApp.initDataUnsafe) {
+        console.log('[telegramSdk] initDataUnsafe contient:', {
+          auth_date: WebApp.initDataUnsafe.auth_date || 'absent',
+          hash: WebApp.initDataUnsafe.hash ? 'présent' : 'absent',
+          user: WebApp.initDataUnsafe.user ? 'présent' : 'absent'
+        });
+      } else {
+        console.warn('[telegramSdk] initDataUnsafe est absent');
+      }
+      
+      console.log('[telegramSdk] Telegram WebApp SDK initialisé avec succès');
       // Note: WebApp.ready() is called in the App component
     } else {
-      console.warn('Telegram WebApp SDK could not be initialized');
+      console.warn('[telegramSdk] Telegram WebApp SDK n\'a pas pu être initialisé');
     }
   } catch (error) {
-    console.error('Error initializing Telegram WebApp:', error);
+    console.error('[telegramSdk] Erreur lors de l\'initialisation du Telegram WebApp:', error);
   }
 };
 

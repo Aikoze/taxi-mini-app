@@ -35,8 +35,10 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path // Ne pas modifier le chemin
       }
-    }
+    },
+    cors: true, // Activer CORS pour toutes les requêtes
     // hmr: {
     //   // Options pour Hot Module Replacement
     //   clientPort: 443 // Force le port client HMR à 443 pour les tunnels HTTPS

@@ -1,10 +1,12 @@
-// server/statsService.js
+// api/services/statsService.js
+import { supabase } from '../../server/database.js';
+
 /**
  * Service pour la gestion des statistiques
  */
 class StatsService {
-  constructor(supabase) {
-    this.supabase = supabase;
+  constructor(db) {
+    this.supabase = db;
   }
 
   /**
@@ -124,4 +126,6 @@ class StatsService {
   }
 }
 
-export default (supabase) => new StatsService(supabase);
+// Créer et exporter une instance
+const statsService = new StatsService(supabase);
+export default statsService;

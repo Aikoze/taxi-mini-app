@@ -1,16 +1,6 @@
 // server/rideAssignmentService.js
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-import telegramService from './telegramService.js';
+import { initSupabase, getTelegramService } from '../_utils.js';
 
-// Configuration
-dotenv.config({ path: './server/.env' });
-
-// Initialiser le client Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
 
 /**
  * Calcule la distance entre deux points géographiques en kilomètres (formule de Haversine)
@@ -312,7 +302,7 @@ const rideAssignmentService = {
         .delete()
         .eq('ride_id', rideId)
         .eq('driver_id', driverId);
-      
+
       return error ? false : true;
     } catch (error) {
       console.error(`Erreur lors du retrait de l'interet pour la course #${rideId} par le chauffeur #${driverId}:`, error);
